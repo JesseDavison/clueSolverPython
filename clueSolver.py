@@ -5,14 +5,15 @@ print("CLUE SOLVER")
 
 
 
-# TODO: create array of players, in order
+# TODO: create list of players, in order
 
 class Player:
-    def __init__(self, name, card1 = "(unknown)", card2 = "(unknown)", card3 = "(unknown)") -> None:
+    def __init__(self, name, card1 = "(unknown)", card2 = "(unknown)", card3 = "(unknown)", turn = -1) -> None:
         self.name = name
         self.card1 = card1
         self.card2 = card2
         self.card3 = card3
+        self.turnOrder = turn
     def __repr__(self) -> str:
         return self.name + ", cards: " + self.card1 + ", " + self.card2 + ", " + self.card3
     def getInfoList(self):
@@ -21,13 +22,18 @@ class Player:
         return self.name
 
 
-scarlett =  Player("Scarlett", "kitchen", "knife", "ballroom")
+scarlett =  Player("Scarlett", "kitchen", "knife", "ballroom", 1)
 green =     Player("Green")
 orchid =    Player("Orchid")
 mustard =   Player("Mustard")
 plum =      Player("Plum")
 white =     Player("White")
 playerList = [scarlett, green, orchid, mustard, plum, white]
+
+
+
+
+
 
 
 def printPlayerOrder(inputList):
@@ -50,17 +56,26 @@ def verifyOrder(listOfPlayers):         # should return a boolean??
 
 def correctOrder():
     pass
+                        # create a list of possible names... this list will be modified so just make a copy of playerList
+                        # "Who is first?" (then show list of possible names)
+                        # based on int input, add that name to new list, and remove that name from list of possible names
 
+                        # or should I give each player a TURN-NUMBER property? 
 
+# WHY AREN'T COMMENTS APPEARING?
+
+#make a START-GAME function
+# make a WHILE loop that keeps going as long as player order is incorrect (FALSE)
 verifyOrder(playerList)
 
 
 
+def whoseTurnIsIt():
+    pass
 
 
 
-
-
+# TODO: make a working turn cycle... e.g., each player enters 1 on their turn to print "hello," and the turn goes to next appropriate player
 
 
 # TODO: create a (growing) list of the details of each turn.... guesser, what they guessed, who didn't respond, who did respond, what card (if known)
