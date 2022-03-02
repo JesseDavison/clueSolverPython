@@ -38,41 +38,22 @@ def printPlayerOrder(inputList):
     print("  ")
 
 
-
-
-def verifyAndCorrectOrder():
+def verifyOrder(listOfPlayers):         # should return a boolean??
     playerOrderIsCorrect = False
-    printPlayerOrder(playerList)
-    
-    while(playerOrderIsCorrect == False):
-        
-        userInput = input("Is the order correct? (y/n)")       
+    printPlayerOrder(listOfPlayers)
+    userInput = input("Is the order correct? (y/n)")
+    if(userInput == "y"):
+        return True
+    else:
+        return False
 
-        if(userInput == "y"):
-            playerOrderIsCorrect = True
-            print("yay!", end=" ")
-        else:
-            namesToPickFrom = {1: scarlett, 2: green, 3: orchid, 4: mustard, 5: plum, 6: white}   
-            firstSecondEtc = ["first", "second", "third", "fourth", "fifth", "sixth"]
-            newOrder = []
 
-            iterator = 0
-            while (len(namesToPickFrom) > 0):
-                print("Who is " + firstSecondEtc[iterator])
-                iterator += 1
-                x = 1
-                for key, value in namesToPickFrom.items():
-                    print(x, end=" ")
-                    print(". ", end=" ")
-                    print(value.getNameOnly())
-                    x += 1
-                userInput = int(input(""))
-                newOrder.append(namesToPickFrom.get(userInput))
-                del namesToPickFrom[userInput]                              # this line is a problem because the user input won't necessarily match the dictionary key
-        printPlayerOrder(newOrder)          
-    return newOrder     # return corrected player order list
+def correctOrder():
+    pass
 
-playerList = verifyAndCorrectOrder()
+
+verifyOrder(playerList)
+
 
 
 
