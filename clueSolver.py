@@ -5,15 +5,58 @@
 print("CLUE SOLVER")
 
 
-
 # TODO: create list of players, in order
+
+
+class Card:
+    def __init__(self, name, type) -> None:
+        self.name = name
+        self.type = type    # i.e., killer / weapon / room
+        self.owner = "unknown"      # might not use this
+    def __repr__(self) -> str:
+        return self.name
+    def getType(self):
+        return self.type
+    def getName(self):
+        return self.name
+    def setOwner(self, player):
+        self.owner = player
+    def getOwner(self):
+        return self.owner
+
+greenCard =         Card("Green", "killer")
+mustardCard =       Card("Mustard", "killer")
+peacockCard =       Card("Peacock", "killer")
+plumCard =          Card("Plum", "killer")
+scarlettCard =      Card("Scarlett", "killer")
+orchidCard =        Card("Orchid", "killer")
+
+candlestickCard =   Card("Candlestick", "weapon")
+daggerCard =        Card("Dagger", "weapon")
+pipeCard =          Card("Pipe", "weapon")
+revolverCard =      Card("Revolver", "weapon")
+ropeCard =          Card("Rope", "weapon")
+wrenchCard =        Card("Wrench", "weapon")
+
+ballroomCard =      Card("Ballroom", "room")
+billiardRoomCard =  Card("Billiard Room", "room")
+conservatoryCard =  Card("Conservatory", "room")
+diningRoomCard =    Card("Dining Room", "room")
+hallCard =          Card("Hall", "room")
+kitchenCard =       Card("Kitchen", "room")
+libraryCard =       Card("Library", "room")
+loungeCard =        Card("Lounge", "room")
+studyCard =         Card("Study", "room")
+
+
 
 class Player:
     def __init__(self, name, turn = -1, card1 = "(unknown)", card2 = "(unknown)", card3 = "(unknown)") -> None:
         self.name = name
-        self.card1 = card1
-        self.card2 = card2
-        self.card3 = card3
+        # self.card1 = card1
+        # self.card2 = card2
+        # self.card3 = card3
+        self.cardList = [card1, card2, card3]
         self.turnOrder = turn
         self.turnOrderConfirmed = False
     def __repr__(self) -> str:
@@ -30,15 +73,23 @@ class Player:
         return self.turnOrderConfirmed
     def turnOrderConfirmedSetTrue(self):
         self.turnOrderConfirmed = True
+    def getCardList(self):
+        return self.cardList
 
 
-scarlett =  Player("Scarlett", 3, "kitchen", "knife", "ballroom")
-green =     Player("Green", 6)
-orchid =    Player("Orchid", 2)
-mustard =   Player("Mustard", 4)
-plum =      Player("Plum", 1)
-peacock =   Player("Peacock", 5)
-playerList = [scarlett, green, orchid, mustard, plum, peacock]
+scarlettPlayer =  Player("Scarlett", 3, greenCard, candlestickCard, ballroomCard)
+greenPlayer =     Player("Green", 6)
+orchidPlayer =    Player("Orchid", 2)
+mustardPlayer =   Player("Mustard", 4)
+plumPlayer =      Player("Plum", 1)
+peacockPlayer =   Player("Peacock", 5)
+playerList = [scarlettPlayer, greenPlayer, orchidPlayer, mustardPlayer, plumPlayer, peacockPlayer]
+
+
+
+                        # TODO: user needs to select their character??? yes, so they can input their cards
+
+
 
 
 def testForProblemsInTurnOrder(inputList):
@@ -87,11 +138,6 @@ def printPlayerOrder(inputList, title, worryAboutProblems, printOnlyPlayersWithU
         # (write this later)
 
 
-
-
-# printPlayerOrder(playerList, "Current player order:", True, True)
-
-
 def correctTheOrder(inputList):
     # user sees list of all players, in their current turnOrder, whose turnOrderConfirmed is FALSE
     #   that is, only show players with turnOrderConfirmed set to FALSE
@@ -119,22 +165,17 @@ def verifyOrder(inputList):         # should return a boolean? yay or nay?
         printPlayerOrder(inputList, "Final player order:", False, False)
 
 
+printPlayerOrder(playerList, "Which character are you playing as?", False, True)
+userInput = input(" ")
 
-verifyOrder(playerList)
 
-print("Scarlett's turn order:", end=" ")
-print(scarlett.getTurnOrder())
-print("Mustard:", end=" ")
-print(mustard.getTurnOrder())
+# verifyOrder(playerList)
 
 
 
 
 
 #make a START-GAME function
-# make a WHILE loop that keeps going as long as player order is incorrect (FALSE)
-
-# verifyOrder(playerList)
 
 
 
@@ -154,10 +195,20 @@ def whoseTurnIsIt():
 
 
 
-# TODO: make a working turn cycle... e.g., each player enters 1 on their turn to print "hello," and the turn goes to next appropriate player
+# TODO: make a very basic but still-working turn cycle... e.g., each player enters 1 on their turn to print "hello," and the turn goes to next appropriate player
 
 
 # TODO: create a (growing) list of the details of each turn.... guesser, what they guessed, who didn't respond, who did respond, what card (if known)
+#               maybe use a dictionary of dictionaries e.g., 
+#                               {
+#                                   1: {guesser: scarlett, killerGuessed: plum,    weaponGuessed: candlestick, roomGuessed: ballroom}.........},
+#                                   2: {guesser: plum,     killerGuessed: mustard, weaponGuessed: dagger,      roomGuessed: lounge  }.........},
+
+#                               }
+
+# SHOULD PROBABLY LEARN MORE ABOUT DATA REPRESENTATION IN PYTHON, BEFORE TACKLING THIS, e.g. "Visualize Data with Python," on Codecademy.com
+
+
 # TODO: create a function to accept a new guess.... turnNumber will be a parameter
 
 # TODO: after each guess is "completed," run the analysis algorithm over every single guess
