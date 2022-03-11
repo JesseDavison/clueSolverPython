@@ -31,29 +31,29 @@ class Card:
     def getPlaceInCardList(self):
         return self.placeInCardList
 
-greenCard =         Card("Green", "killer", 1)
-mustardCard =       Card("Mustard", "killer", 2)
-peacockCard =       Card("Peacock", "killer", 3)
-plumCard =          Card("Plum", "killer", 4)
-scarlettCard =      Card("Scarlett", "killer", 5)
-orchidCard =        Card("Orchid", "killer", 6)
+greenCard =         Card("Green", "killer", 0)
+mustardCard =       Card("Mustard", "killer", 1)
+peacockCard =       Card("Peacock", "killer", 2)
+plumCard =          Card("Plum", "killer", 3)
+scarlettCard =      Card("Scarlett", "killer", 4)
+orchidCard =        Card("Orchid", "killer", 5)
 
-candlestickCard =   Card("Candlestick", "weapon", 7)
-daggerCard =        Card("Dagger", "weapon", 8)
-pipeCard =          Card("Pipe", "weapon", 9)
-revolverCard =      Card("Revolver", "weapon", 10)
-ropeCard =          Card("Rope", "weapon", 11)
-wrenchCard =        Card("Wrench", "weapon", 12)
+candlestickCard =   Card("Candlestick", "weapon", 6)
+daggerCard =        Card("Dagger", "weapon", 7)
+pipeCard =          Card("Pipe", "weapon", 8)
+revolverCard =      Card("Revolver", "weapon", 9)
+ropeCard =          Card("Rope", "weapon", 10)
+wrenchCard =        Card("Wrench", "weapon", 11)
 
-ballroomCard =      Card("Ballroom", "room", 13)
-billiardRoomCard =  Card("Billiard Room", "room", 14)
-conservatoryCard =  Card("Conservatory", "room", 15)
-diningRoomCard =    Card("Dining Room", "room", 16)
-hallCard =          Card("Hall", "room", 17)
-kitchenCard =       Card("Kitchen", "room", 18)
-libraryCard =       Card("Library", "room", 19)
-loungeCard =        Card("Lounge", "room", 20)
-studyCard =         Card("Study", "room", 21)
+ballroomCard =      Card("Ballroom", "room", 12)
+billiardRoomCard =  Card("Billiard Room", "room", 13)
+conservatoryCard =  Card("Conservatory", "room", 14)
+diningRoomCard =    Card("Dining Room", "room", 15)
+hallCard =          Card("Hall", "room", 16)
+kitchenCard =       Card("Kitchen", "room", 17)
+libraryCard =       Card("Library", "room", 18)
+loungeCard =        Card("Lounge", "room", 19)
+studyCard =         Card("Study", "room", 20)
 
 cardList = [greenCard, mustardCard, peacockCard, plumCard, scarlettCard, orchidCard, candlestickCard, daggerCard, pipeCard, revolverCard, ropeCard, wrenchCard, ballroomCard, billiardRoomCard, conservatoryCard, diningRoomCard, hallCard, kitchenCard, libraryCard, loungeCard, studyCard]
 
@@ -68,7 +68,7 @@ class Player:
         self.turnOrder = turn
         self.turnOrderConfirmed = False
     def __repr__(self) -> str:
-        return self.name + ", cards: " + self.card1 + ", " + self.card2 + ", " + self.card3
+        return self.name #+ ", cards: " + self.card1 + ", " + self.card2 + ", " + self.card3
     def getInfoList(self):
         return [self.name, self.turnOrder, self.card1, self.card2, self.card3]
     def getNameOnly(self):
@@ -222,59 +222,141 @@ def askUserWhichCharacter():
 
 
 
-#make a START-GAME function, which would contain:.....
-# askUserWhichCharacter()                                                         #*****************************************************************
-# verifyOrder(playerList)
 
 
-
-# TODO: make a very basic but still-working turn cycle... e.g., each player enters 1 on their turn to print "hello," and the turn goes to next appropriate player
-#           there will be the overarching list of turns, from turn 1 to turn 28 or whatever
-#           there will be the "player turn" which will cycle from 1 to 6, then start over
 
 def convertTurnToPlayerTurn(turn):
     return ((turn - 1) % 6) + 1
 
 
-# during turn 1, 
-# ask the "player" to type a random number, and store that number in a dictionary where key,value = (turn, randomNumber)
-
-
-def executeTurn(turn, turnDataDictionary):
+def executeTurn(turnNumber, turnDataDictionary):
     # identify the guessing player by converting the turn number into playerTurn
     activePlayer = Player
     for player in playerList:
-        if player.getTurnOrder() == convertTurnToPlayerTurn(turn):
+        if player.getTurnOrder() == convertTurnToPlayerTurn(turnNumber):
             activePlayer = player
+    activePlayerName = activePlayer.getNameOnly()
     
-    # prompt the player to enter a given randomly-generated number
-    print(activePlayer.getNameOnly(), end="")
-    print(", please enter the following: ")
-    print(random.randrange(0, 999))
+    print("Start of TURN ", end="")
+    print(turnNumber, end="")
+    print(", guessing player is ", end="")
+    print(activePlayerName)
+
+    turnDataDictionary[turnNumber] = {}
+    turnDataDictionary[turnNumber]['guesser'] = activePlayerName
+
+    # prompt the player to enter info
+    print("Enter the killer guessed: ")
+    #           **** print a list of possible killers
+    for x in range(6):
+        print(str(x) + ". " + str(cardList[x].getName()))
+    playerInput = int(input(""))    
+    turnDataDictionary[turnNumber]["killerGuessed"] = playerInput
+
+    print("Enter the weapon guessed: ")
+    for x in range(6, 12):
+        print(str(x) + ". " + str(cardList[x].getName()))
     playerInput = int(input(""))
-    # store that number in the turnData dictionary
-    turnDataDictionary[turn] = playerInput
+    turnDataDictionary[turnNumber]["weaponGuessed"] = playerInput
+
+    print("Enter the room guessed: ")
+    for x in range(12, 21):
+        print(str(x) + ". " + str(cardList[x].getName()))
+    playerInput = int(input(""))
+    turnDataDictionary[turnNumber]["roomGuessed"] = playerInput
+
+    tempString = str(activePlayerName) + "Response"
+    turnDataDictionary[turnNumber][tempString] = 'n'        # the guessing player's response is null
+
+    # Record other player's responses
+    #   the first respondent will be the one whose turnOrder is 1 higher than the guesser's
+    incrementalVariable = 1
+    while incrementalVariable < 6:
+        respondentTurnOrder = convertTurnToPlayerTurn(turnNumber + incrementalVariable)
+        for player in playerList:
+            if player.getTurnOrder() == respondentTurnOrder:
+                respondentName = player.getNameOnly()
+                print("What was the response of " + str(respondentName) + "? n = null, d = declined to respond, r = responded")
+                playerInput = str(input(""))
+                tempString = str(respondentName) + "Response"            
+                turnDataDictionary[turnNumber][tempString] = playerInput
+        incrementalVariable += 1
+
+    # Record the card that was shown (if known). The card number (0 thru 20) will be recorded. If unknown, set to -1
+    turnDataDictionary[turnNumber]['card'] = -1
+    print("Do you know what card was shown? (y/n)")
+    playerInput = str(input(""))
+    if playerInput == "y":
+        print("What card was shown?")
+        # print list of all cards, with numbers
+        for card in cardList:
+            print(str(card.getPlaceInCardList()) + ". " + str(card.getName()))
+        playerInput = str(input(""))
+        turnDataDictionary[turnNumber]['card'] = playerInput
+
+
+
+    print(turnDataDictionary)
+    print("")
+
+
 
 
 
 def startGame():
-    askUserWhichCharacter()
-    verifyOrder(playerList)
+    # askUserWhichCharacter()
+    # verifyOrder(playerList)
 
-    testDictionary = {}          # eventually this will be turnDataDictionary, or something
-    #                               also initialize a blank analyzedData table
-    turn = 1
+    #                               need to initialize a blank analyzedData table?
+
+    turnLog = {}
+    # turnLog = {1: {'guesser': -1, 'killerGuessed': -1, 'weaponGuessed': -1, 'roomGuessed': -1, 'p1Response': 'noResponse', 'p2Response': 'noResponse', 'p3Response': 'noResponse', 'p4Response': 'noResponse', 'p5Response': 'noResponse', 'p6Response': 'noResponse', 'cardShown': -1} }
+
+
+#   info in a TURN:
+#       guesser - this is the player whose turn it is
+#       what 3 cards were guessed - this will be 1 killer, 1 weapon, 1 room
+#       responses - 
+#           n = never asked to respond, i.e. NOT APPLICABLE... this will also be the value assigned to the guesser
+#           d = declined to respond
+#           r = responded
+#       card (integer) - most of the time this will not be known
+
+#   for analysis purposes, it will probably be easier to keep all guesses in 1 nested list or nested dictionary
+
+
+    turn = 9
     gameFinished = False
     while (gameFinished == False): 
-        executeTurn(turn, testDictionary)
-        print(testDictionary)
+        executeTurn(turn, turnLog)      # turn is an int
+        # print(turnLog)
         turn += 1
-        if turn == 4:
+        if turn == 2:
             gameFinished = True
 
 
 
 startGame()
+
+
+
+#guesser
+#killers are cards 1 thru 6     (initialized as -1)
+#weapons are cards 7 thru 12
+#rooms are cards   13 thru 21
+#possible player responses are: noResponse, declined, responded
+#cardShown is -1 if unknown, otherwise it's the card number (1 thru 21)
+
+# turnLog = {1: {'guesser': -1, 'killerGuessed': -1, 'weaponGuessed': -1, 'roomGuessed': -1, 'p1Response': 'noResponse', 'p2Response': 'noResponse', 'p3Response': 'noResponse', 'p4Response': 'noResponse', 'p5Response': 'noResponse', 'p6Response': 'noResponse', 'cardShown': -1} }
+
+
+
+# print(turnLog[1])
+# print(" ")
+# print(turnLog[1]['p1Response'])
+
+
+
 
 
 
