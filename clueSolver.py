@@ -24,6 +24,9 @@ class Card:
         return self.type
     def getName(self):
         return self.name
+    def getNumberAndName(self):
+        tempString = str(self.placeInCardList) + ". " + str(self.name)
+        return tempString
     def setOwner(self, player):
         self.owner = player
     def getOwner(self):
@@ -59,14 +62,15 @@ cardList = [greenCard, mustardCard, peacockCard, plumCard, scarlettCard, orchidC
 
 
 class Player:
-    def __init__(self, name, turn = -1) -> None:
+    def __init__(self, name, turn = -1, column = -1) -> None:
         self.name = name
-        # self.card1 = card1
-        # self.card2 = card2
-        # self.card3 = card3
+        self.card1 = Card
+        self.card2 = Card
+        self.card3 = Card
         self.cardList = []
         self.turnOrder = turn
         self.turnOrderConfirmed = False
+        self.columnNumber = column
     def __repr__(self) -> str:
         return self.name #+ ", cards: " + self.card1 + ", " + self.card2 + ", " + self.card3
     def getInfoList(self):
@@ -81,6 +85,7 @@ class Player:
         return self.turnOrderConfirmed
     def turnOrderConfirmedSetTrue(self):
         self.turnOrderConfirmed = True
+    
     def getCardList(self):
         return self.cardList
     def addToCardList(self, card):
@@ -88,14 +93,33 @@ class Player:
             print("ERROR - there are already 3 cards held by the player")
         else:
             self.cardList.append(card)
+    
+    def addCard1(self, card):
+        self.card1 = card
+    def addCard2(self, card):
+        self.card2 = card
+    def addCard3(self, card):
+        self.card3 = card
+    def getCard1(self):
+        return self.card1
+    def getCard2(self):
+        return self.card2
+    def getCard3(self):
+        return self.card3
+
+    def getColumnNumber(self):
+        return self.columnNumber
 
 
-scarlettPlayer =  Player("Scarlett", 1)
-greenPlayer =     Player("Green", 2)
-orchidPlayer =    Player("Orchid", 6)
-mustardPlayer =   Player("Mustard", 5)
-plumPlayer =      Player("Plum", 4)
-peacockPlayer =   Player("Peacock", 3)
+
+
+
+scarlettPlayer =  Player("Scarlett", 1, 0)
+greenPlayer =     Player("Green", 2, 1)
+orchidPlayer =    Player("Orchid", 6, 5)
+mustardPlayer =   Player("Mustard", 5, 4)
+plumPlayer =      Player("Plum", 4, 3)
+peacockPlayer =   Player("Peacock", 3, 2)
 playerList = [scarlettPlayer, greenPlayer, orchidPlayer, mustardPlayer, plumPlayer, peacockPlayer]
 
 
@@ -196,9 +220,7 @@ def askUserWhichCharacter():
     while(x <= len(cardList)):
         for card in cardList:
             print("    ", end=" ")
-            print(card.getPlaceInCardList(), end=" ")
-            print(". ", end=" ")
-            print(card.getName())
+            print(card.getNumberAndName())
             x += 1
     #user enters the integers, each on a separate line
     userCard1 = int(input(""))
@@ -210,15 +232,19 @@ def askUserWhichCharacter():
     for card in cardList:
         if userCard1 == card.getPlaceInCardList():
             usersCharacter.addToCardList(card)
+            usersCharacter.addCard1(card)
         if userCard2 == card.getPlaceInCardList():
             usersCharacter.addToCardList(card)
+            usersCharacter.addCard2(card)
         if userCard3 == card.getPlaceInCardList():
             usersCharacter.addToCardList(card)
+            usersCharacter.addCard3(card)
             
     #show the user the self.getCardList so the user can verify & possibly try again if the messed up ..........maybe later
     print("These are your cards:")
     print(usersCharacter.getCardList())
 
+    return usersCharacter
 
 
 
@@ -265,20 +291,32 @@ def executeTurn(turnNumber, turnDataDictionary):
     playerInput = int(input(""))
     turnDataDictionary[turnNumber]["roomGuessed"] = playerInput
 
-    tempString = str(activePlayerName) + "Response"
-    turnDataDictionary[turnNumber][tempString] = 'n'        # the guessing player's response is null
+    # tempString = str(activePlayerName).lower() + "Response"
+    # turnDataDictionary[turnNumber][tempString] = 'n'        # the guessing player's response is automatically set to null
 
     # Record other player's responses
-    #   the first respondent will be the one whose turnOrder is 1 higher than the guesser's
+    #   the first respondent will be the one whose turnOrder is 1 higher than the guesser's... hence the incrementalVariable = 1
+    #   as soon as 1 player responds (r), stop asking if the other players responded... hence didSomeoneRespond = False
+
+    # set the player responses to a default of null. We're doing it here so the order in which the players appear is consistent between turns
+    for player in playerList:
+        turnDataDictionary[turnNumber][str(player.getNameOnly()).lower() + "Response"] = "n"
+        
+    didSomeoneRespond = False
     incrementalVariable = 1
     while incrementalVariable < 6:
         respondentTurnOrder = convertTurnToPlayerTurn(turnNumber + incrementalVariable)
         for player in playerList:
             if player.getTurnOrder() == respondentTurnOrder:
                 respondentName = player.getNameOnly()
-                print("What was the response of " + str(respondentName) + "? n = null, d = declined to respond, r = responded")
-                playerInput = str(input(""))
-                tempString = str(respondentName) + "Response"            
+                if didSomeoneRespond == False:
+                    print("What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined to respond, r = responded")
+                    playerInput = str(input(""))
+                else:
+                    continue        # we already set all responses to null (n) as a default
+                if playerInput == "r":
+                    didSomeoneRespond = True
+                tempString = str(respondentName).lower() + "Response"            
                 turnDataDictionary[turnNumber][tempString] = playerInput
         incrementalVariable += 1
 
@@ -290,53 +328,104 @@ def executeTurn(turnNumber, turnDataDictionary):
         print("What card was shown?")
         # print list of all cards, with numbers
         for card in cardList:
-            print(str(card.getPlaceInCardList()) + ". " + str(card.getName()))
+            print(card.getNumberAndName())
         playerInput = str(input(""))
         turnDataDictionary[turnNumber]['card'] = playerInput
-
-
 
     print(turnDataDictionary)
     print("")
 
 
 
+#   TODO: create an analyzeData function... this may end up forcing a re-do as to how the data is stored
+def analyzeData(turnNumber, turnDataDictionary, analyTable, user):
+    # every time analyzeData is used it will start from turn 1... so the first thing we do is incorporate the user's 3 cards
+    card1 = user.getCard1()
+    card2 = user.getCard2()
+    card3 = user.getCard3()
+
+    
+
+    #   based on the card, i need to identify the column (card holder), and row (card name) of the part of the analysisTable that needs to changeu
+    #       the way we set up the analysisTable, scarlett is always in column 0, green is always in column 1, etc
+    #       so we *could* use a switch statement
+    #       we could utilize each player's columnNumber property
+
+    column = user.getColumnNumber()
+
+    #   the row number is simply the card's id #
+    row1 = card1.getPlaceInCardList()
+    row2 = card2.getPlaceInCardList()
+    row3 = card3.getPlaceInCardList()
+
+    #   now, we change the analysis table to reflect the fact that these cards' owner is known
+    analyTable[row1][column] = "Y"
+    analyTable[row2][column] = "Y"
+    analyTable[row3][column] = "Y"
+
+
+
+
+
+
+def printAnalysisTable(table):
+    print("ANALYSIS TABLE:")
+    print("".ljust(20, " "), end="")
+    print("scarlett".center(11, ' '), "green".center(11, ' '), "peacock".center(11, ' '), "plum".center(11, ' '), "mustard".center(11, ' '), "orchid".center(11, ' '))
+    for y in range(21):
+        print(cardList[y].getNumberAndName().ljust(20, " "), end="")
+        for x in range(6):
+            print(str(table[y][x]).center(11, ' '), end=" ")
+        print("")
+    print(" ")
+
 
 
 def startGame():
-    # askUserWhichCharacter()
+    userCharacter = askUserWhichCharacter()
     # verifyOrder(playerList)
 
-    #                               need to initialize a blank analyzedData table?
-
+    # initialize a blank data table (nested dictionary) to record the events of each turn
     turnLog = {}
+    # example of what a turn will look like:
     # turnLog = {1: {'guesser': -1, 'killerGuessed': -1, 'weaponGuessed': -1, 'roomGuessed': -1, 'p1Response': 'noResponse', 'p2Response': 'noResponse', 'p3Response': 'noResponse', 'p4Response': 'noResponse', 'p5Response': 'noResponse', 'p6Response': 'noResponse', 'cardShown': -1} }
+    #   info in a TURN:
+    #       guesser - this is the player whose turn it is
+    #       what 3 cards were guessed - this will be 1 killer, 1 weapon, 1 room
+    #       responses - 
+    #           n = never asked to respond, i.e. NOT APPLICABLE... this will also be the value assigned to the guesser
+    #           d = declined to respond
+    #           r = responded
+    #       card (integer) - most of the time this will not be known
 
+    # initialize an analysis table
+    #   columns, then rows
+    # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
 
-#   info in a TURN:
-#       guesser - this is the player whose turn it is
-#       what 3 cards were guessed - this will be 1 killer, 1 weapon, 1 room
-#       responses - 
-#           n = never asked to respond, i.e. NOT APPLICABLE... this will also be the value assigned to the guesser
-#           d = declined to respond
-#           r = responded
-#       card (integer) - most of the time this will not be known
+    analysisTable = [["?" for i in range(6)] for j in range(21)]
+    # printAnalysisTable(analysisTable)
 
-#   for analysis purposes, it will probably be easier to keep all guesses in 1 nested list or nested dictionary
-
-
-    turn = 9
+    turnNumber = 1  # start game at turn 1
     gameFinished = False
     while (gameFinished == False): 
-        executeTurn(turn, turnLog)      # turn is an int
+        executeTurn(turnNumber, turnLog)      
+        analyzeData(turnNumber, turnLog, analysisTable, userCharacter)
+        printAnalysisTable(analysisTable)
         # print(turnLog)
-        turn += 1
-        if turn == 2:
+        turnNumber += 1
+        if turnNumber == 3:
             gameFinished = True
 
 
 
 startGame()
+
+
+
+
+
+
+
 
 
 
@@ -367,24 +456,6 @@ startGame()
 
 
 
-
-
-
-
-# example start of game:
-#   startGame():
-#       askUserWhichCharacter()
-#       verifyOrder(playerList)
-
-#       (initialize the turnData nested dictionary, and initialize a blank analyzedData nested list/dictionary)
-
-#       turn = 1
-#       gameFinished = False
-#       while(gameFinished == False):
-#           executeTurn(x)                  ... this will use the convertTurnToPlayerTurn function to know which player is making a guess
-#           analyzeAllData()                .... this will always start with turn 1 and go thru all turn data
-#           turn += 1
-#           gameFinished = checkIfGameFinished
 
 
 
