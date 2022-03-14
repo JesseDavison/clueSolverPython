@@ -8,7 +8,6 @@ import random
 print("CLUE SOLVER")
 
 
-# TODO: create list of players, in order
 
 
 class Card:
@@ -70,7 +69,7 @@ class Player:
         self.cardList = []
         self.turnOrder = turn
         self.turnOrderConfirmed = False
-        self.columnNumber = column
+        self.columnNumber = column          # this is the column this player will ALWAYS have in the analysisTable
     def __repr__(self) -> str:
         return self.name #+ ", cards: " + self.card1 + ", " + self.card2 + ", " + self.card3
     def getInfoList(self):
@@ -124,7 +123,6 @@ playerList = [scarlettPlayer, greenPlayer, orchidPlayer, mustardPlayer, plumPlay
 
 
 
-                        # TODO: user needs to select their character??? yes, so they can input their cards
 
 
 
@@ -329,39 +327,162 @@ def executeTurn(turnNumber, turnDataDictionary):
         # print list of all cards, with numbers
         for card in cardList:
             print(card.getNumberAndName())
-        playerInput = str(input(""))
+        playerInput = int(input(""))
         turnDataDictionary[turnNumber]['card'] = playerInput
 
-    print(turnDataDictionary)
+    # print(turnDataDictionary)         # printing it like this results in a big visual mess after a few turns... instead we should start a new line after each turn:
+    for x in range(turnNumber):
+        turnNum = x + 1
+        print("turn " + str(turnNum) + ": ", end="")
+        print(turnDataDictionary[turnNum])
     print("")
 
 
 
-#   TODO: create an analyzeData function... this may end up forcing a re-do as to how the data is stored
-def analyzeData(turnNumber, turnDataDictionary, analyTable, user):
-    # every time analyzeData is used it will start from turn 1... so the first thing we do is incorporate the user's 3 cards
-    card1 = user.getCard1()
-    card2 = user.getCard2()
-    card3 = user.getCard3()
+#   TODO: create an analyzeData function
+def analyzeData(turnNumber, turnData, analyTable, user):
 
-    
+    if turnNumber == 1:
+        card1 = user.getCard1()
+        card2 = user.getCard2()
+        card3 = user.getCard3()
 
-    #   based on the card, i need to identify the column (card holder), and row (card name) of the part of the analysisTable that needs to changeu
-    #       the way we set up the analysisTable, scarlett is always in column 0, green is always in column 1, etc
-    #       so we *could* use a switch statement
-    #       we could utilize each player's columnNumber property
+        column = user.getColumnNumber()
+        #   the row number is simply the card's id #
+        row1 = card1.getPlaceInCardList()
+        row2 = card2.getPlaceInCardList()
+        row3 = card3.getPlaceInCardList()
 
-    column = user.getColumnNumber()
+        #   now, we change the analysis table to reflect the fact that these cards' owner is known
+        analyTable[row1][column] = ["Y"]
+        analyTable[row2][column] = ["Y"]
+        analyTable[row3][column] = ["Y"]
 
-    #   the row number is simply the card's id #
-    row1 = card1.getPlaceInCardList()
-    row2 = card2.getPlaceInCardList()
-    row3 = card3.getPlaceInCardList()
 
-    #   now, we change the analysis table to reflect the fact that these cards' owner is known
-    analyTable[row1][column] = "Y"
-    analyTable[row2][column] = "Y"
-    analyTable[row3][column] = "Y"
+    def howManyYsInColumn(columnNum):
+        numberOfYs = 0
+        for row in range(21):
+            if "Y" in analyTable[row][columnNum]:
+                numberOfYs += 1
+        return numberOfYs
+
+
+
+
+    #   next, mark those rows with "-" to indicate it's impossible that other players have those same cards
+    def processYsHorizontal():
+        incrementalRow = 0
+        while incrementalRow < 21:
+            incrementalColumn = 0
+            while incrementalColumn < 6:
+                if "Y" in analyTable[incrementalRow][incrementalColumn]:
+                    for x in range(6):
+                        if x != incrementalColumn:
+                            analyTable[incrementalRow][x] = ["-"]
+                incrementalColumn += 1
+            incrementalRow += 1
+
+
+#   if a player has 3xY in their column, then we know they do NOT have any other cards
+    def processYsVertical():
+        #   look down each column and count up how many Ys we see
+        for column in range(6):
+            numberOfYs = 0
+            locationOfYs = []
+            for row in range(21):
+                if "Y" in analyTable[row][column]:
+                    numberOfYs += 1
+                    locationOfYs.append(row)
+                if numberOfYs > 3:
+                    print("THERE ARE TOO MANY Ys IN COLUMN " + str(column))
+            if numberOfYs == 3:
+                for y in range(21):
+                    if y not in locationOfYs:
+                        analyTable[y][column] = ["-"]
+
+
+    def checkForAllNegativesInRow():
+        #   if a row has all "-", we know that that card is in the envelope
+        pass
+
+    def checkForSingleTurnNumbersInColumn():
+        #   if a turnNumber appears only once in a column, we know that that player has that card
+        pass
+
+
+
+    #   we need some nested functions to handle:
+    #       decline to respond (d)
+    #           mark a "-" for each player who declines, for those three cards
+    #           every time a new "-" appears, we need to check whether that affects/refines info we learned in previous turns
+    #       respond by showing a card (r)
+    #           if we don't know what card was shown, then we replace the "?" with the turn number, indicating that on that turn one of those 3 cards is held by the player
+    #           if the card is known, then the ONLY THING we put into the analyTable is the "Y" for the owner of the card, and we remove everything else
+    #           every time a new Y appears in the table, we need to run horizontal & vertical processing
+    #
+    #       check columns to see if a turn number appears all by itself... if so, then we know ......
+
+    def processDecline():
+        #   identify all players who declined ... i.e., scarlettResponse == 'd', mustardResponse == 'd', etc, and mark them as "-"
+        killerRowNum = turnData[turnNumber]['killerGuessed']
+        weaponRowNum = turnData[turnNumber]['weaponGuessed']
+        roomRowNum = turnData[turnNumber]['roomGuessed']
+
+        for player in playerList:
+            nameString = player.getNameOnly().lower() + "Response"
+            if turnData[turnNumber][nameString] == 'd':
+                analyTable[killerRowNum][player.getColumnNumber()] = ["-"]
+                analyTable[weaponRowNum][player.getColumnNumber()] = ["-"]
+                analyTable[roomRowNum][player.getColumnNumber()] = ["-"]  
+
+        checkForAllNegativesInRow()     
+        checkForSingleTurnNumbersInColumn()         #   if there is indeed a single turnNumber in a column, what is the best way to handle it? recursively run the turn over again?         
+
+
+    def processRespond():
+        killerRowNum = turnData[turnNumber]['killerGuessed']
+        weaponRowNum = turnData[turnNumber]['weaponGuessed']
+        roomRowNum = turnData[turnNumber]['roomGuessed']
+
+        isTheShownCardKnown = False
+        if turnData[turnNumber]['card'] != -1:
+            isTheShownCardKnown = True
+
+        #   going to append the turnNumber into the cell's list, and remove "?" if it is there
+        for player in playerList:
+            nameString = player.getNameOnly().lower() + "Response"
+            if turnData[turnNumber][nameString] == 'r':
+                #   if the card is known then don't enter turnNumber... only enter "Y"
+                if isTheShownCardKnown:
+                    cardNumber = turnData[turnNumber]['card']
+                    analyTable[cardNumber][player.getColumnNumber()] = ["Y"]
+                else:    
+                    if "-" not in analyTable[killerRowNum][player.getColumnNumber()] and howManyYsInColumn(player.getColumnNumber()) < 3:
+                        analyTable[killerRowNum][player.getColumnNumber()].append(turnNumber)
+                    if "-" not in analyTable[weaponRowNum][player.getColumnNumber()] and howManyYsInColumn(player.getColumnNumber()) < 3:
+                        analyTable[weaponRowNum][player.getColumnNumber()].append(turnNumber)
+                    if "-" not in analyTable[roomRowNum][player.getColumnNumber()] and howManyYsInColumn(player.getColumnNumber()) < 3:
+                        analyTable[roomRowNum][player.getColumnNumber()].append(turnNumber)
+
+                    if "?" in analyTable[killerRowNum][player.getColumnNumber()]:
+                        analyTable[killerRowNum][player.getColumnNumber()].remove("?")
+                    if "?" in analyTable[weaponRowNum][player.getColumnNumber()]:
+                        analyTable[weaponRowNum][player.getColumnNumber()].remove("?")
+                    if "?" in analyTable[roomRowNum][player.getColumnNumber()]:
+                        analyTable[roomRowNum][player.getColumnNumber()].remove("?")
+        processYsHorizontal()        # because this function can sometimes result in "Y"s being added, these 2 (horiz/vert) need to be run afterwards, every time
+        processYsVertical()          # because this function can sometimes result in "Y"s being added, these 2 (horiz/vert) need to be run afterwards, every time
+        checkForSingleTurnNumbersInColumn()
+
+
+
+    processYsHorizontal()
+    processYsVertical()         # these two (horiz/vert) are run first thing in order to incorporate the user's 3 known cards
+    processDecline()
+    processRespond()
+
+
+
 
 
 
@@ -370,20 +491,29 @@ def analyzeData(turnNumber, turnDataDictionary, analyTable, user):
 
 def printAnalysisTable(table):
     print("ANALYSIS TABLE:")
+    print("----------------------------------------------------------------------------------------------")    
     print("".ljust(20, " "), end="")
-    print("scarlett".center(11, ' '), "green".center(11, ' '), "peacock".center(11, ' '), "plum".center(11, ' '), "mustard".center(11, ' '), "orchid".center(11, ' '))
-    for y in range(21):
-        print(cardList[y].getNumberAndName().ljust(20, " "), end="")
-        for x in range(6):
-            print(str(table[y][x]).center(11, ' '), end=" ")
-        print("")
+    print("scarlett".center(11, ' '), "green".center(11, ' '), "peacock".center(11, ' '), "plum".center(11, ' '), "mustard".center(11, ' '), "orchid".center(11, ' '), " |")
+    for row in range(21):
+        # create a blank row to separate each category of cards:
+        if row == 6 or row == 12 or row == 17:
+            print("                                                                                             |")
+        print(cardList[row].getNumberAndName().ljust(20, " "), end="")
+        for column in range(6):
+            # if the output would be "-" then just leave it blank, otherwise print it
+            if "-" in table[row][column]:
+                print(" ".center(11, ' '), end=" ")
+            else:
+                print(str(table[row][column]).center(11, ' '), end=" ")
+        print(" |")
+    print("----------------------------------------------------------------------------------------------")    
     print(" ")
 
 
 
 def startGame():
     userCharacter = askUserWhichCharacter()
-    # verifyOrder(playerList)
+    verifyOrder(playerList)
 
     # initialize a blank data table (nested dictionary) to record the events of each turn
     turnLog = {}
@@ -401,9 +531,8 @@ def startGame():
     # initialize an analysis table
     #   columns, then rows
     # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
-
-    analysisTable = [["?" for i in range(6)] for j in range(21)]
-    # printAnalysisTable(analysisTable)
+    # analysisTable = []
+    analysisTable = [[ ["?"] for i in range(6)] for j in range(21)]
 
     turnNumber = 1  # start game at turn 1
     gameFinished = False
@@ -413,7 +542,7 @@ def startGame():
         printAnalysisTable(analysisTable)
         # print(turnLog)
         turnNumber += 1
-        if turnNumber == 3:
+        if turnNumber == 33:
             gameFinished = True
 
 
