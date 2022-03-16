@@ -3,6 +3,8 @@
 
 
 from asyncio.windows_utils import pipe
+from collections import UserString
+from imghdr import what
 import random
 # import json
 import ast
@@ -126,7 +128,25 @@ playerList = [scarlettPlayer, greenPlayer, orchidPlayer, mustardPlayer, plumPlay
 
 
 
+def askUserInputInt(choices, promptText):
+    while True:
+        try:
+            garbage = -9999
+            while garbage not in choices:
+                garbage = int(input(promptText))
+            return garbage
+        except ValueError as e:
+                print("Ya done fucked up your typing. You need to type an INTEGER. Try again.")
 
+def askUserInputChar(choices, promptText):
+    while True:
+        try:
+            garbage = ""
+            while garbage not in choices:
+                garbage = str(input(promptText))
+            return garbage
+        except ValueError as e:
+                print("Ya done fucked up your typing. You need to type a CHARACTER. Try again.")
 
 
 def testForProblemsInTurnOrder(inputList):
@@ -181,8 +201,9 @@ def correctTheOrder(inputList):
     x = 1
     while (x <= len(inputList)):
         printPlayerOrder(inputList, "Who is player {}".format(x), False, True)   
-        userInput = int(input(" "))     # user is prompted to pick who is first... user inputs an integer
+        # userInput = int(input(" "))     # user is prompted to pick who is first... user inputs an integer
                                         # for example, the user inputs 4, which is Mustard... so we need to identify which player object has self.turnOrder of 4
+        userInput = askUserInputInt([1, 2, 3, 4, 5, 6], "")
         for player in inputList:
             if player.getTurnOrder() == userInput and player.getConfirmedStatus() == False:
                 player.setTurnOrder(x)
@@ -192,7 +213,8 @@ def correctTheOrder(inputList):
 
 def verifyOrder(inputList):         # should return a boolean? yay or nay?
     printPlayerOrder(inputList, "Current player order (using verifyOrder function)", False, True)
-    userInput = input("Is this order correct? (y/n)")
+    # userInput = input("Is this order correct? (y/n)")
+    userInput = askUserInputChar(["y", "n"], "Is this order correct? (y/n):  ")
     if(userInput == "y"):
             # set each player as CONFIRMED
         for player in inputList:
@@ -212,7 +234,8 @@ def askUserWhichCharacter(loadFromFileUserCharacter = -12, loadFromFileCard1 = -
         usersCharacter = loadFromFileUserCharacter
     else:
         printPlayerOrder(playerList, "Which character are you playing as?", False, True)
-        userInputPlayer = int(input(" "))
+        # userInputPlayer = int(input(" "))
+        userInputPlayer = askUserInputInt([1, 2, 3, 4, 5, 6], "")
         #use this integer to identify the user's character
         for player in playerList:
             if player.getTurnOrder() == userInputPlayer:
@@ -235,9 +258,10 @@ def askUserWhichCharacter(loadFromFileUserCharacter = -12, loadFromFileCard1 = -
                 print(card.getNumberAndName())
                 x += 1
         #user enters the integers, each on a separate line
-        userCard1 = int(input(""))
-        userCard2 = int(input(""))
-        userCard3 = int(input(""))
+        possibleCards = [x for x in range(21)]
+        userCard1 = askUserInputInt(possibleCards, "First Card. Type a number from 0 to 20: ")
+        userCard2 = askUserInputInt(possibleCards, "Second Card. Type a number from 0 to 20: ")
+        userCard3 = askUserInputInt(possibleCards, "Third Card. Type a number from 0 to 20: ")
 
     #use self.addToCardList 3 times to add the three cards
     
@@ -284,23 +308,23 @@ def executeTurn(turnNumber, turnDataDictionary):
     turnDataDictionary[turnNumber]['guesser'] = activePlayerName
 
     # prompt the player to enter info
-    print("Enter the killer guessed: ")
+    # print("Enter the killer guessed: ")
     #           **** print a list of possible killers
     for x in range(6):
         print(str(x) + ". " + str(cardList[x].getName()))
-    playerInput = int(input(""))    
+    playerInput = askUserInputInt([x for x in range(6)], "Enter the killer guessed: ")
     turnDataDictionary[turnNumber]["killerGuessed"] = playerInput
 
-    print("Enter the weapon guessed: ")
+    # print("Enter the weapon guessed: ")
     for x in range(6, 12):
         print(str(x) + ". " + str(cardList[x].getName()))
-    playerInput = int(input(""))
+    playerInput = askUserInputInt([x for x in range(6, 12)], "Enter the weapon guessed: ")
     turnDataDictionary[turnNumber]["weaponGuessed"] = playerInput
 
-    print("Enter the room guessed: ")
+    # print("Enter the room guessed: ")
     for x in range(12, 21):
         print(str(x) + ". " + str(cardList[x].getName()))
-    playerInput = int(input(""))
+    playerInput = askUserInputInt([x for x in range(12, 21)], "Enter the room guessed: ")
     turnDataDictionary[turnNumber]["roomGuessed"] = playerInput
 
     # set the player responses to a default of null. We're doing it here so the order in which the players appear is consistent between turns
@@ -318,8 +342,8 @@ def executeTurn(turnNumber, turnDataDictionary):
             if player.getTurnOrder() == respondentTurnOrder:
                 respondentName = player.getNameOnly()
                 if didSomeoneRespond == False:
-                    print("What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined to respond, r = responded")
-                    playerInput = str(input(""))
+                    # print("What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined to respond, r = responded")
+                    playerInput = askUserInputChar(["n", "d", "r"], "What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined, r = responded:  ")
                     tempString = str(respondentName).lower() + "Response"            
                     turnDataDictionary[turnNumber][tempString] = playerInput
                     
@@ -331,14 +355,14 @@ def executeTurn(turnNumber, turnDataDictionary):
 
     # Record the card that was shown (if known). The card number (0 thru 20) will be recorded. If unknown, set to -1
     turnDataDictionary[turnNumber]['card'] = -1
-    print("Do you know what card was shown? (y/n)")
-    playerInput = str(input(""))
+    # print("Do you know what card was shown? (y/n)")
+    playerInput = askUserInputChar(["y", "n"], "Do you know what card was shown? (y/n):  ")
     if playerInput == "y":
         print("What card was shown?")
         # print list of all cards, with numbers
         for card in cardList:
             print(card.getNumberAndName())
-        playerInput = int(input(""))
+        playerInput = askUserInputInt([x for x in range(21)], "What card was shown?:  ")
         turnDataDictionary[turnNumber]['card'] = playerInput
 
     # print out the turns, for reference
@@ -361,7 +385,7 @@ def executeTurn(turnNumber, turnDataDictionary):
 
 
 
-def analyzeData(turnNumber, turnData, analyTable, user):
+def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
 
     # if turnNumber == 1:
     #       turning this off so we can paste in old games and start at turnNumber > 1
@@ -399,33 +423,42 @@ def analyzeData(turnNumber, turnData, analyTable, user):
             while __incrementalColumn < 6:
                 if "Y" in analyTable[__incrementalRow][__incrementalColumn]:
                     for x in range(6):
-                        if x != __incrementalColumn:
+                        if x != __incrementalColumn and "*****" not in analyTable[__incrementalRow][x]:
                             analyTable[__incrementalRow][x] = ["-"]
                 __incrementalColumn += 1
             __incrementalRow += 1
-        checkForAllNegativesInRow()
+        checkForAllNegativesInRow(killerWeaponRoom)
 
 
 #   if a player has 3xY in their column, then we know they do NOT have any other cards
+#   if a player has two "Y" in their column and one "?", then we know that "?" is actually a "Y"
     def processYsVertical():
         #   look down each column and count up how many Ys we see
         for __column in range(6):
             __numberOfYs = 0
             __locationOfYs = []
+            __numberOfQuestionMarks = 0            
+            __locationOfQuestionMarks = []
             for row in range(21):
                 if "Y" in analyTable[row][__column]:
                     __numberOfYs += 1
                     __locationOfYs.append(row)
+                if "?" in analyTable[row][__column]:
+                    __numberOfQuestionMarks += 1
+                    __locationOfQuestionMarks.append(row)
                 if __numberOfYs > 3:
                     print("THERE ARE TOO MANY Ys IN COLUMN " + str(__column))
             if __numberOfYs == 3:
                 for y in range(21):
                     if y not in __locationOfYs and "*****" not in analyTable[y][__column]:
                         analyTable[y][__column] = ["-"]
-        checkForAllNegativesInRow()
+            if __numberOfYs == 2 and __numberOfQuestionMarks == 1:
+                # set the "?" to become a "Y"
+                analyTable[__locationOfQuestionMarks[0]][__column] = ["YES", "Y"]  # it has "YES" for now, for debugging purposes
+        checkForAllNegativesInRow(killerWeaponRoom)
 
 
-    def checkForAllNegativesInRow():
+    def checkForAllNegativesInRow(kWR):
         #   if a row has all "-", we know that that card is in the envelope, so let's print a bunch of **** for the user's convenience
 
         # look at row 0 of the analysis table. If there is a "-" in every column (0 thru 5), then set each cell to = ["*****"] (has 11 * characters)
@@ -435,9 +468,20 @@ def analyzeData(turnNumber, turnData, analyTable, user):
                 if "-" in analyTable[__row][__column]:
                     __numberOfNegatives += 1
             if __numberOfNegatives == 6:
-                for __column in range(6):
-                    analyTable[__row][__column] = []
-                    analyTable[__row][__column].append("*****")
+                # for __column in range(6):
+                #     analyTable[__row][__column] = []
+                #     analyTable[__row][__column].append("*****")   # instead of marking the analyTable with ***** let's just announce that the card is known
+                
+                if __row < 6:
+                    # print("THE KILLER IS KNOWN")
+                    # set the global "known" variable here
+                    kWR[0] = cardList[__row].getName()
+                if __row > 5 and __row < 12:
+                    # print("THE WEAPON IS KNOWN")
+                    kWR[1] = cardList[__row].getName()
+                if __row > 11:
+                    # print("THE ROOM IS KNOWN")
+                    kWR[2] = cardList[__row].getName()
 
 
     def checkForLastRemainingQuestionMarkInCategory():
@@ -505,7 +549,7 @@ def analyzeData(turnNumber, turnData, analyTable, user):
                     analyTable[__weaponRowNum][__player.getColumnNumber()] = ["-"]
                     analyTable[__roomRowNum][__player.getColumnNumber()] = ["-"]  
    
-            checkForAllNegativesInRow()
+            checkForAllNegativesInRow(killerWeaponRoom)
             checkForSingleTurnNumbersInColumn()         #   if there is indeed a single turnNumber in a column, what is the best way to handle it? recursively run the turn over again? 
                                                         #   Or just turn that turnNumber into a "Y" and call it good? If so, we can add a "cleanup" step at end of turn to see if 
                                                         #   there is any conclusive info the user can benefit from. .... we want the conclusive info presented ASAP
@@ -527,10 +571,23 @@ def analyzeData(turnNumber, turnData, analyTable, user):
             for __player in playerList:
                 __nameString = __player.getNameOnly().lower() + "Response"
                 if turnData[__x + 1][__nameString] == 'r':
-                    #   if the card is known then don't enter turnNumber... only enter "Y"
+                    #   if the card is known then don't enter turnNumbers... only enter "Y"
                     if __isTheShownCardKnown:
                         __cardNumber = turnData[__x + 1]['card']
+                        whatWasRemoved = []
+                        whatWasRemoved = analyTable[__cardNumber][__player.getColumnNumber()]
                         analyTable[__cardNumber][__player.getColumnNumber()] = ["Y"]
+                        # IMMEDIATELY we need to clear out turn numbers from past guesses (whatWasRemoved), before checkForSingleTurnNumbersInColumn() screws it up by accidentally
+                        #   leaving a lone turnNumber in a cell (and thereby making future analysis incorrectly think that that lone number indicates the card is held)
+                        #       in other words, if where we just put a "Y", this cell was associated with previous turns, we need to deactivate those turns, i.e. .remove() them
+                        #           go down the column in the analysis table, and check each cell for all the turn numbers in whatWasRemoved
+                        for row in range(21):
+                            for element in whatWasRemoved:
+                                if element in analyTable[row][__player.getColumnNumber()] and element in [x+1 for x in range(turnNumber)]: # i.e. we don't want to remove "Y" or "?"
+                                    analyTable[row][__player.getColumnNumber()].remove(element)
+
+
+
                     #   if there is a "Y" in any of the three cards that were just guessed, then don't bother recording the turnNumbers bc for all we know they showed that "Y" card
                     elif "Y" in analyTable[__killerRowNum][__player.getColumnNumber()] or "Y" in analyTable[__weaponRowNum][__player.getColumnNumber()] or "Y" in analyTable[__roomRowNum][__player.getColumnNumber()]:
                         continue
@@ -545,15 +602,15 @@ def analyzeData(turnNumber, turnData, analyTable, user):
                             if (__x + 1) not in analyTable[__roomRowNum][__player.getColumnNumber()] and "*****" not in analyTable[__roomRowNum][__player.getColumnNumber()]:
                                 analyTable[__roomRowNum][__player.getColumnNumber()].append(__x + 1)
 
-                        if "?" in analyTable[__killerRowNum][__player.getColumnNumber()]:
-                            analyTable[__killerRowNum][__player.getColumnNumber()].remove("?")
-                        if "?" in analyTable[__weaponRowNum][__player.getColumnNumber()]:
-                            analyTable[__weaponRowNum][__player.getColumnNumber()].remove("?")
-                        if "?" in analyTable[__roomRowNum][__player.getColumnNumber()]:
-                            analyTable[__roomRowNum][__player.getColumnNumber()].remove("?")
+                        # if "?" in analyTable[__killerRowNum][__player.getColumnNumber()]:
+                        #     analyTable[__killerRowNum][__player.getColumnNumber()].remove("?")
+                        # if "?" in analyTable[__weaponRowNum][__player.getColumnNumber()]:
+                        #     analyTable[__weaponRowNum][__player.getColumnNumber()].remove("?")
+                        # if "?" in analyTable[__roomRowNum][__player.getColumnNumber()]:
+                        #     analyTable[__roomRowNum][__player.getColumnNumber()].remove("?")
             processYsHorizontal()        # because this function can sometimes result in "Y"s being added, these 2 (horiz/vert) need to be run afterwards, every time
             processYsVertical()          # because this function can sometimes result in "Y"s being added, these 2 (horiz/vert) need to be run afterwards, every time
-            checkForAllNegativesInRow()
+            checkForAllNegativesInRow(killerWeaponRoom)
             checkForSingleTurnNumbersInColumn()
 
 
@@ -571,24 +628,27 @@ def analyzeData(turnNumber, turnData, analyTable, user):
 
 
 
-def printAnalysisTable(table):
+def printAnalysisTable(table, actualKillerWeaponRoom):
     print("ANALYSIS TABLE:")
-    print("----------------------------------------------------------------------------------------------")    
+    print("                             Killer is: " + str(actualKillerWeaponRoom[0]))
+    print("                             Weapon is: " + str(actualKillerWeaponRoom[1]))
+    print("                             Room is: " + str(actualKillerWeaponRoom[2]))
+    print("----------------------------------------------------------------------------------------------------------------------")    
     print("".ljust(20, " "), end="")
-    print("scarlett".center(11, ' '), "green".center(11, ' '), "peacock".center(11, ' '), "plum".center(11, ' '), "mustard".center(11, ' '), "orchid".center(11, ' '), " |")
+    print("scarlett".center(15, ' '), "green".center(15, ' '), "peacock".center(15, ' '), "plum".center(15, ' '), "mustard".center(15, ' '), "orchid".center(15, ' '), " |")
     for row in range(21):
         # create a blank row to separate each category of cards:
         if row == 6 or row == 12 or row == 17:
-            print("                                                                                             |")
+            print("                                                                                                                     |")
         print(cardList[row].getNumberAndName().ljust(20, " "), end="")
         for column in range(6):
             # if the output would be "-" then just leave it blank, otherwise print it
             if "-" in table[row][column]:
-                print("-".center(11, ' '), end=" ")
+                print("-".center(15, ' '), end=" ")
             else:
-                print(str(table[row][column]).center(11, ' '), end=" ")
+                print(str(table[row][column]).center(15, ' '), end=" ")
         print(" |")
-    print("----------------------------------------------------------------------------------------------")    
+    print("----------------------------------------------------------------------------------------------------------------------")    
     print(" ")
 
 
@@ -597,8 +657,8 @@ def startGame():
     userCharacter = askUserWhichCharacter()
     verifyOrder(playerList)
 
-    print("Do you want to load a previous game? (y/n)")
-    userInput = str(input(""))
+    # print("Do you want to load a previous game? (y/n)")
+    userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
         
         with open("turnInfo.txt") as f:
@@ -619,8 +679,8 @@ def startGame():
 
 
 
-        print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
-        turnNumber = int(input(""))
+        # print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
+        turnNumber = askUserInputInt([x for x in range(99)], "What was the last turn that was completed? Look at the .txt file if you're not sure. :  ")
         turnNumber += 1
         
     else:
@@ -645,11 +705,16 @@ def startGame():
     # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
     analysisTable = [[ ["?"] for i in range(6)] for j in range(21)]
 
+    # actualKiller = "unknown"
+    # actualWeapon = "unknown"
+    # actualRoom = "unknown"
+    actualKillerWeaponRoom = ["unknown", "unknown", "unknown"]
+
     gameFinished = False
     while (gameFinished == False): 
         executeTurn(turnNumber, turnLog)      
-        analyzeData(turnNumber, turnLog, analysisTable, userCharacter)
-        printAnalysisTable(analysisTable)
+        analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom)
+        printAnalysisTable(analysisTable, actualKillerWeaponRoom)
         # print(turnLog)
         turnNumber += 1
         if turnNumber == 55:
@@ -709,28 +774,14 @@ startGame()
 
 
 
-
-# TODO: create a (growing) list of the details of each turn.... guesser, what they guessed, who didn't respond, who did respond, what card (if known)
-#               maybe use a dictionary of dictionaries e.g., 
-#                               {
-#                                   1: {guesser: scarlett, killerGuessed: plum,    weaponGuessed: candlestick, roomGuessed: ballroom}.........},
-#                                   2: {guesser: plum,     killerGuessed: mustard, weaponGuessed: dagger,      roomGuessed: lounge  }.........},
-
-#                               }
-
 # SHOULD PROBABLY LEARN MORE ABOUT DATA REPRESENTATION IN PYTHON, BEFORE TACKLING THIS, e.g. "Visualize Data with Python," on Codecademy.com
 
-
-# TODO: create a function to accept a new guess.... turnNumber will be a parameter
-
-# TODO: after each guess is "completed," run the analysis algorithm over every single guess
 
 
 
 
 # TODO: function to display Guesses chart
 
-# TODO: function to display Analysis chart
 
 
 
