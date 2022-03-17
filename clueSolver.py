@@ -420,11 +420,22 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
         __incrementalRow = 0
         while __incrementalRow < 21:
             __incrementalColumn = 0
+            whatWasThere = []
             while __incrementalColumn < 6:
                 if "Y" in analyTable[__incrementalRow][__incrementalColumn]:
                     for x in range(6):
-                        if x != __incrementalColumn and "*****" not in analyTable[__incrementalRow][x]:
+                        if x != __incrementalColumn:
+                            # whatWasThere = []
+                            # whatWasThere = analyTable[__incrementalRow][x]
+                            #   IMMEDIATELY we need to go up & down that column and remove the turn numbers that USED TO BE in the cell where we're putting the "-"
                             analyTable[__incrementalRow][x] = ["-"]
+
+                            # here, while we're still working in this column, we will do the removing mentioned in the above comment
+                            # if "?" not in whatWasThere and "Y" not in whatWasThere and "-" not in whatWasThere:
+                            #     for row in range(21):
+                            #         for element in whatWasThere:
+                            #             if element in analyTable[row][__incrementalColumn]:
+                            #                 analyTable[row][__incrementalColumn].remove(element)
                 __incrementalColumn += 1
             __incrementalRow += 1
         checkForAllNegativesInRow(killerWeaponRoom)
@@ -450,7 +461,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
                     print("THERE ARE TOO MANY Ys IN COLUMN " + str(__column))
             if __numberOfYs == 3:
                 for y in range(21):
-                    if y not in __locationOfYs and "*****" not in analyTable[y][__column]:
+                    if y not in __locationOfYs:
                         analyTable[y][__column] = ["-"]
             if __numberOfYs == 2 and __numberOfQuestionMarks == 1:
                 # set the "?" to become a "Y"
@@ -459,19 +470,14 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
 
 
     def checkForAllNegativesInRow(kWR):
-        #   if a row has all "-", we know that that card is in the envelope, so let's print a bunch of **** for the user's convenience
-
-        # look at row 0 of the analysis table. If there is a "-" in every column (0 thru 5), then set each cell to = ["*****"] (has 11 * characters)
+        #   if a row has all "-", we know that that card is in the envelope, so announce that fact by printing it at top of analysis table printout
+        # look at row 0 of the analysis table. If there is a "-" in every column then we're golden
         for __row in range(21):
             __numberOfNegatives = 0
             for __column in range(6):                
                 if "-" in analyTable[__row][__column]:
                     __numberOfNegatives += 1
             if __numberOfNegatives == 6:
-                # for __column in range(6):
-                #     analyTable[__row][__column] = []
-                #     analyTable[__row][__column].append("*****")   # instead of marking the analyTable with ***** let's just announce that the card is known
-                
                 if __row < 6:
                     # print("THE KILLER IS KNOWN")
                     # set the global "known" variable here
@@ -512,7 +518,18 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
                     #   so we know the column, and we can cycle thru the rows and replace (turn + 1) with "Y"
                     for row in range(21):
                         if (__turn + 1) in analyTable[row][__column]:
+                            # WE NEED TO ACT IMMEDIATELY to prevent a logic error!!!!!!! Keep track of whatWasThere and remove those turn numbers from the rest of the column
+                            # for example if a cell has [17, 18, 19] and the 19 is the only 19 in the column, then when we change the cell to ["Y"] it will look like the 
+                            # 17 and 18 still in that column are indicative of a card being held... and that should not happen
+                            whatWasThere = []
+                            whatWasThere = analyTable[row][__column]
                             analyTable[row][__column] = ["Y"]
+                            #   IMMEDIATELY we need to go up & down that column and remove the turn numbers that USED TO BE in the cell where we're putting the "Y"
+                            if "Y" not in whatWasThere and "-" not in whatWasThere:
+                                for row in range(21):
+                                    for element in whatWasThere:
+                                        if element in analyTable[row][__column] and element != "?":
+                                            analyTable[row][__column].remove(element)
 
 
 
@@ -544,7 +561,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
 
             for __player in playerList:
                 __nameString = __player.getNameOnly().lower() + "Response"
-                if turnData[__x + 1][__nameString] == 'd' and "*****" not in analyTable[__killerRowNum][__player.getColumnNumber()]:
+                if turnData[__x + 1][__nameString] == 'd':
                     analyTable[__killerRowNum][__player.getColumnNumber()] = ["-"]
                     analyTable[__weaponRowNum][__player.getColumnNumber()] = ["-"]
                     analyTable[__roomRowNum][__player.getColumnNumber()] = ["-"]  
@@ -593,13 +610,13 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
                         continue
                     else:    #  if there's no "-" already, and we don't already know that player's 3 cards, then add the turn number
                         if "-" not in analyTable[__killerRowNum][__player.getColumnNumber()] and howManyYsInColumn(__player.getColumnNumber()) < 3:
-                            if (__x + 1) not in analyTable[__killerRowNum][__player.getColumnNumber()] and "*****" not in analyTable[__killerRowNum][__player.getColumnNumber()]:
+                            if (__x + 1) not in analyTable[__killerRowNum][__player.getColumnNumber()]:  # don't add more than one instance of that turnNumber
                                 analyTable[__killerRowNum][__player.getColumnNumber()].append(__x + 1)
                         if "-" not in analyTable[__weaponRowNum][__player.getColumnNumber()] and howManyYsInColumn(__player.getColumnNumber()) < 3:
-                            if (__x + 1) not in analyTable[__weaponRowNum][__player.getColumnNumber()] and "*****" not in analyTable[__weaponRowNum][__player.getColumnNumber()]:
+                            if (__x + 1) not in analyTable[__weaponRowNum][__player.getColumnNumber()]:
                                 analyTable[__weaponRowNum][__player.getColumnNumber()].append(__x + 1)
                         if "-" not in analyTable[__roomRowNum][__player.getColumnNumber()] and howManyYsInColumn(__player.getColumnNumber()) < 3:
-                            if (__x + 1) not in analyTable[__roomRowNum][__player.getColumnNumber()] and "*****" not in analyTable[__roomRowNum][__player.getColumnNumber()]:
+                            if (__x + 1) not in analyTable[__roomRowNum][__player.getColumnNumber()]:
                                 analyTable[__roomRowNum][__player.getColumnNumber()].append(__x + 1)
 
                         # if "?" in analyTable[__killerRowNum][__player.getColumnNumber()]:
@@ -614,7 +631,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom):
             checkForSingleTurnNumbersInColumn()
 
 
-    for x in range(10):
+    for x in range(1):      # this is a lazy way to make sure we process everything.... hopefully change this later
         processYsHorizontal()       # these two (horiz/vert) are run first thing in order to incorporate the user's 3 known cards
         processYsVertical()         # these two (horiz/vert) are run first thing in order to incorporate the user's 3 known cards
         processDecline()
@@ -708,7 +725,7 @@ def startGame():
     # actualKiller = "unknown"
     # actualWeapon = "unknown"
     # actualRoom = "unknown"
-    actualKillerWeaponRoom = ["unknown", "unknown", "unknown"]
+    actualKillerWeaponRoom = ["?", "?", "?"]
 
     gameFinished = False
     while (gameFinished == False): 
