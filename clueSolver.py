@@ -196,7 +196,7 @@ def printPlayerOrder(inputList, title, worryAboutProblems, printOnlyPlayersWithU
         # (write this later)
 
 
-def correctTheOrder(inputList):
+def correctTheOrder(inputList, playerOrderForFile):
     # user sees list of all players, in their current turnOrder, whose turnOrderConfirmed is FALSE
     #   that is, only show players with turnOrderConfirmed set to FALSE
     x = 1
@@ -208,6 +208,8 @@ def correctTheOrder(inputList):
         for player in inputList:
             if player.getTurnOrder() == userInput and player.getConfirmedStatus() == False:
                 player.setTurnOrder(x)
+                playerOrderForFile.append(player.getNameOnly())
+                print("TESTING TESTING TESTING: " + str(playerOrderForFile))
                 player.turnOrderConfirmedSetTrue()
         x += 1
 
@@ -216,12 +218,18 @@ def verifyOrder(inputList):         # should return a boolean? yay or nay?
     printPlayerOrder(inputList, "Current player order (using verifyOrder function)", False, True)
     # userInput = input("Is this order correct? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Is this order correct? (y/n):  ")
+    playerOrderForFile = []
     if(userInput == "y"):
+        # this is the default player order:
+        playerOrderForFile = ['Scarlett', 'Green', 'Peacock', 'Plum', 'Mustard', 'Orchid']
             # set each player as CONFIRMED
         for player in inputList:
             player.turnOrderConfirmedSetTrue()
     else:
-        correctTheOrder(inputList)
+        correctTheOrder(inputList, playerOrderForFile)
+        fileObject = open('turnInfo.txt', 'a')
+        fileObject.write(str(playerOrderForFile) + "\n")
+        fileObject.close()
         printPlayerOrder(inputList, "Final player order:", False, False)
 
 
@@ -242,6 +250,13 @@ def askUserWhichCharacter(loadFromFileUserCharacter = -12, loadFromFileCard1 = -
             if player.getTurnOrder() == userInputPlayer:
                 usersCharacter = player
 
+        # wipe the turnInfo.txt file, and write this info to file
+        fileObject = open('turnInfo.txt', 'w')
+        fileObject.write(str(usersCharacter.getNameOnly()) + "\n")
+        fileObject.close()
+
+
+
     userCard1 = -5
     userCard2 = -5
     userCard3 = -5
@@ -261,8 +276,20 @@ def askUserWhichCharacter(loadFromFileUserCharacter = -12, loadFromFileCard1 = -
         #user enters the integers, each on a separate line
         possibleCards = [x for x in range(21)]
         userCard1 = askUserInputInt(possibleCards, "First Card. Type a number from 0 to 20: ")
+        fileObject = open('turnInfo.txt', 'a')
+        fileObject.write(str(userCard1) + "\n")
+        fileObject.close()
+
         userCard2 = askUserInputInt(possibleCards, "Second Card. Type a number from 0 to 20: ")
+        fileObject = open('turnInfo.txt', 'a')
+        fileObject.write(str(userCard2) + "\n")
+        fileObject.close()
+
         userCard3 = askUserInputInt(possibleCards, "Third Card. Type a number from 0 to 20: ")
+        fileObject = open('turnInfo.txt', 'a')
+        fileObject.write(str(userCard3) + "\n")
+        fileObject.close()
+
 
     #use self.addToCardList 3 times to add the three cards
     
@@ -463,7 +490,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 #   if a player has one Y  in their column and a
 
 
-    def processYsVertical():
+    def processYsVertical():        
         #   look down each column and count up how many Ys we see
         for __column in range(6):
             __numberOfYs = 0
@@ -486,6 +513,13 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 
                 # check whether there are at least 2 cells that share a turnNumber
+        # process:
+        #     confirm that the column has two Ys
+        #         confirm that any 2 or 3 cells in the column share a turnNumber (if everything is working correctly a Y and a turnNumber will never exist in a cell at same time)
+        #         doAtLeastTwoCellsShareATurnNumber = False
+        #         if True:
+        #             BOOM we know that all cells that ONLY HAVE a ? should be changed to '-'        
+
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL 
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
                 for x in range(turnNumber):
@@ -495,9 +529,9 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if (x+1) in analyTable[rrow][__column] and row != rrow:        
                                     doAtLeastTwoCellsShareATurnNumber = True
                                     # print("did I break something?")
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
 
-                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
-                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
 
             if __numberOfYs == 3:
                 for y in range(21):
@@ -518,7 +552,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 for row in range(21):
                     if analyTable[row][__column] == ["?"]:
                         analyTable[row][__column] = ["-"]
-                        print("COLUMN " + str(__column) + " HAD TWO Ys AND AT LEAST ONE OTHER SET OF turnNUMBERS, SO AT ROW " + str(row) + " WE REPLACED THE LONE ? WITH '-'")
+                        print("(vertical function) COLUMN " + str(__column) + " HAD TWO Ys AND AT LEAST ONE OTHER SET OF turnNUMBERS, SO AT ROW " + str(row) + " WE REPLACED THE LONE ? WITH '-'")
+                        print("     This is experimental... so if this is working please remove this comment")
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
 
@@ -600,12 +635,12 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             for element in whatWasRemoved:
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":   # include "Y" bc we don't want to undo what we just did
                                     analyTable[rrow][column].remove(element)
-        elif tallyKillerSection[0] == 5 and tallyKillerSection[1] == 1:       # if this happens we know the ? should be a "-"
-            for row in range(6):
-                for column in range(6):
-                    if "?" in analyTable[row][column]:
-                        analyTable[row][column] = ["-"]
-                        print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE KILLER SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")
+        # elif tallyKillerSection[0] == 5 and tallyKillerSection[1] == 1:       # if this happens we know the ? should be a "-"
+        #     for row in range(6):
+        #         for column in range(6):
+        #             if "?" in analyTable[row][column]:
+        #                 analyTable[row][column] = ["-"]
+        #                 print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE KILLER SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")
         elif tallyKillerSection[0] == 5:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(6):
                 for column in range(6):
@@ -613,7 +648,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         analyTable[row][column] = ["-"]
                         print("FIVE Ys WERE FOUND IN THE KILLER SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")
         
-
+        #####################################################################################
         tallyWeaponSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
         for row in range(6, 12):
             for column in range(6):
@@ -633,12 +668,12 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             for element in whatWasRemoved:
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
                                     analyTable[rrow][column].remove(element)
-        elif tallyWeaponSection[0] == 5 and tallyWeaponSection[1] == 1:       # if this happens we know the ? should be a "-"
-            for row in range(6, 12):
-                for column in range(6):
-                    if "?" in analyTable[row][column]:
-                        analyTable[row][column] = ["-"]   
-                        print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE WEAPON SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                 
+        # elif tallyWeaponSection[0] == 5 and tallyWeaponSection[1] == 1:       # if this happens we know the ? should be a "-"
+        #     for row in range(6, 12):
+        #         for column in range(6):
+        #             if "?" in analyTable[row][column]:
+        #                 analyTable[row][column] = ["-"]   
+        #                 print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE WEAPON SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                 
         elif tallyWeaponSection[0] == 5:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(6, 12):
                 for column in range(6):
@@ -648,7 +683,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 
 
-
+        #####################################################################################
         tallyRoomSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
         for row in range(12, 21):
             for column in range(6):
@@ -668,18 +703,18 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             for element in whatWasRemoved:
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
                                     analyTable[rrow][column].remove(element)
-        elif tallyRoomSection[0] == 8 and tallyRoomSection[1] == 1:       # if this happens we know the ? should be a "-"
-            for row in range(12, 21):
-                for column in range(6):
-                    if "?" in analyTable[row][column]:
-                        analyTable[row][column] = ["-"]    
-                        print("A LONE ?, ALONG WITH EIGHT Y, WAS FOUND IN THE ROOM SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                
+        # elif tallyRoomSection[0] == 8 and tallyRoomSection[1] == 1:       # if this happens we know the ? should be a "-"
+        #     for row in range(12, 21):
+        #         for column in range(6):
+        #             if "?" in analyTable[row][column]:
+        #                 analyTable[row][column] = ["-"]    
+        #                 print("A LONE ?, ALONG WITH EIGHT Y, WAS FOUND IN THE ROOM SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                
         elif tallyRoomSection[0] == 8:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(12, 21):
                 for column in range(6):
                     if "?" in analyTable[row][column]:
                         analyTable[row][column] = ["-"]
-                        print("FIVE Ys WERE FOUND IN THE KILLER SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")    
+                        print("EIGHT Ys WERE FOUND IN THE ROOM SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")    
 
         # because this function adds Ys to the analysis table, it should call....
         # processRespond()      # i'm afraid of creating an infinite loop
@@ -721,7 +756,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
 
         ########################################################################################################
@@ -764,7 +799,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
         ########################################################################################################
         doAtLeastTwoCellsInROOMSectionShareATurnNumber = False
@@ -798,7 +833,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE ROOM SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE ROOM SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
 
 ###################
@@ -842,7 +877,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             whatWasThere = []
                             whatWasThere = analyTable[row][__column]
                             analyTable[row][__column] = ["Y"]
-                            print("...AND DELETED ITS BUDDY AT ROW " + str(row))
+                            print("...AND DELETED IT AT ROW " + str(row))
                             # IMMEDIATELY we need to go up & down that column and remove the turn numbers that USED TO BE in the cell where we're putting the "Y"
                             if "Y" not in whatWasThere and "-" not in whatWasThere:
                                 for row in range(21):
@@ -993,13 +1028,25 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
 
 
 def startGame():
-    userCharacter = askUserWhichCharacter()
-    verifyOrder(playerList)
+    userCharacterName = ""
+    userCard1Name = ""
+    userCard2Name = ""
+    userCard3Name = ""
+    playerOrder = []
+
+    userCharacter = Player
+
 
     # print("Do you want to load a previous game? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
         
+        # need to identify the userCharacter **************************************
+
+        # need to fix the player order *****************************************************
+            # BUT FIRST we need to establish how starting a NEW GAME will work... i.e., how we will save that info into the file
+
+
         with open("turnInfo.txt") as f:
 
             # pull out the second line, which will have card1
@@ -1016,45 +1063,39 @@ def startGame():
             data = f.read()
         turnLog = ast.literal_eval(data)
 
-
-
         # print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
         turnNumber = askUserInputInt([x for x in range(99)], "What was the last turn that was completed? Look at the .txt file if you're not sure. :  ")
         turnNumber += 1
         
-    else:
 
-        
+    # # open file for writing
+    # f = open("turnInfo.txt", "w")
+
+    # # write file
+    # f.write(str(turnDataDictionary))
+    # # close file
+    # f.close()
+
+
+
+    else:
+        userCharacter = askUserWhichCharacter()
+        verifyOrder(playerList)
     # initialize a blank data table (nested dictionary) to record the events of each turn
         turnLog = {}
         turnNumber = 1
-    # example of what a turn will look like:
-    # turnLog = {1: {'guesser': -1, 'killerGuessed': -1, 'weaponGuessed': -1, 'roomGuessed': -1, 'p1Response': 'noResponse', 'p2Response': 'noResponse', 'p3Response': 'noResponse', 'p4Response': 'noResponse', 'p5Response': 'noResponse', 'p6Response': 'noResponse', 'cardShown': -1} }
-    #   info in a TURN:
-    #       guesser - this is the player whose turn it is
-    #       what 3 cards were guessed - this will be 1 killer, 1 weapon, 1 room
-    #       responses - 
-    #           n = never asked to respond, i.e. NOT APPLICABLE... this will also be the value assigned to the guesser
-    #           d = declined to respond
-    #           r = responded
-    #       card (integer) - most of the time this will not be known
-
     # initialize an analysis table
     #   columns, then rows
     # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
     analysisTable = [[ ["?"] for i in range(6)] for j in range(21)]
-
-    # actualKiller = "unknown"
-    # actualWeapon = "unknown"
-    # actualRoom = "unknown"
     actualKillerWeaponRoom = ["?", "?", "?"]
-    announcements = [False, False, False]   # this regulates when, in the terminal, the discovery of the killer/weapon/room is announced
+    announcementsHaveBeenMadeForKillerWeaponRoom = [False, False, False]   # this regulates when, in the terminal, the discovery of the killer/weapon/room is announced
 
 
     gameFinished = False
     while (gameFinished == False): 
         executeTurn(turnNumber, turnLog)      
-        analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom, announcements)
+        analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom, announcementsHaveBeenMadeForKillerWeaponRoom)
         printAnalysisTable(analysisTable, actualKillerWeaponRoom)
         # print(turnLog)
         turnNumber += 1
