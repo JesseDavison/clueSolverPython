@@ -492,8 +492,9 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for row in range(21):
                         if (x+1) in analyTable[row][__column]:
                             for rrow in range(21):
-                                if (x+1) in analyTable[row][__column] and row != rrow:        
+                                if (x+1) in analyTable[rrow][__column] and row != rrow:        
                                     doAtLeastTwoCellsShareATurnNumber = True
+                                    # print("did I break something?")
 
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
@@ -605,6 +606,12 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if "?" in analyTable[row][column]:
                         analyTable[row][column] = ["-"]
                         print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE KILLER SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")
+        elif tallyKillerSection[0] == 5:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
+            for row in range(6):
+                for column in range(6):
+                    if "?" in analyTable[row][column]:
+                        analyTable[row][column] = ["-"]
+                        print("FIVE Ys WERE FOUND IN THE KILLER SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")
         
 
         tallyWeaponSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
@@ -632,6 +639,14 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if "?" in analyTable[row][column]:
                         analyTable[row][column] = ["-"]   
                         print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE WEAPON SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                 
+        elif tallyWeaponSection[0] == 5:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
+            for row in range(6, 12):
+                for column in range(6):
+                    if "?" in analyTable[row][column]:
+                        analyTable[row][column] = ["-"]
+                        print("FIVE Ys WERE FOUND IN THE WEAPON SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")
+
+
 
 
         tallyRoomSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
@@ -659,7 +674,13 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if "?" in analyTable[row][column]:
                         analyTable[row][column] = ["-"]    
                         print("A LONE ?, ALONG WITH EIGHT Y, WAS FOUND IN THE ROOM SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                
-        
+        elif tallyRoomSection[0] == 8:    # seriously, if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
+            for row in range(12, 21):
+                for column in range(6):
+                    if "?" in analyTable[row][column]:
+                        analyTable[row][column] = ["-"]
+                        print("FIVE Ys WERE FOUND IN THE KILLER SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")    
+
         # because this function adds Ys to the analysis table, it should call....
         # processRespond()      # i'm afraid of creating an infinite loop
 
@@ -679,7 +700,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     numberOfYsInKillerSection += 1
 
         # find out whether, in the section, there are 2 or more cells that share a turnNumber  ***AND*** that turnNumber does not exist in any other section
-        if numberOfYsInKillerSection == 4:  
+        if numberOfYsInKillerSection == 4:  # 4 is n-2, where n is the number of possible killers
             for row in range(6):
                 for column in range(6):
                     for turnMinusOne in range(turnNumber):
@@ -703,7 +724,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
 
-
+        ########################################################################################################
         doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = False
         discoveredTurnNumber = -1
         # tally the number of Y in the WEAPON section
@@ -723,7 +744,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
                                     doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = True
                                     discoveredTurnNumber = turnMinusOne+1
-			    for rrow in range(12, 21):       # because WEAPONs are in rows 0 thru 5
+                            for rrow in range(12, 21):       # because WEAPONs are in rows 0 thru 5
                                 if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
                                     doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = True
                                     discoveredTurnNumber = turnMinusOne+1
@@ -745,7 +766,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             analyTable[row][column] = ["-"]
                             print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
-
+        ########################################################################################################
         doAtLeastTwoCellsInROOMSectionShareATurnNumber = False
         discoveredTurnNumber = -1
         # tally the number of Y in the ROOM section
@@ -756,7 +777,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     numberOfYsInROOMSection += 1
 
         # find out whether, in the section, there are 2 or more cells that share a turnNumber  ***AND*** that turnNumber does not exist in any other section
-        if numberOfYsInROOMSection == 4:  
+        if numberOfYsInROOMSection == 7:    # 7 is n-2, where n is the number of possible rooms
             for row in range(12, 21):
                 for column in range(6):
                     for turnMinusOne in range(turnNumber):
