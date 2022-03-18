@@ -4,6 +4,7 @@
 
 from asyncio.windows_utils import pipe
 from collections import UserString
+from dis import disco
 from imghdr import what
 import random
 # import json
@@ -453,8 +454,15 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         checkForAllNegativesInRow(killerWeaponRoom, announces)
 
 
-#   if a player has 3xY in their column, then we know they do NOT have any other cards
-#   if a player has two "Y" in their column and one "?", then we know that "?" is actually a "Y"
+#   if a player has three Ys in their column, then we know they do NOT have any other cards
+#   if a player has two Ys in their column and one ?, then we know that "?" is actually a "Y"
+
+#   if a player has two Ys in their column and 1 to 3 other cells with a turnNumber, then we know that all OTHER ? in the column are '-'
+#           ^ THIS STILL NEEDS TO BE IMPLEMENTED
+
+#   if a player has one Y  in their column and a
+
+
     def processYsVertical():
         #   look down each column and count up how many Ys we see
         for __column in range(6):
@@ -462,15 +470,34 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
             __locationOfYs = []
             __numberOfQuestionMarks = 0            
             __locationOfQuestionMarks = []
+            doAtLeastTwoCellsShareATurnNumber = False
+            # tally up the Ys and ?s
             for row in range(21):
+                # tally up the Ys
                 if "Y" in analyTable[row][__column]:
                     __numberOfYs += 1
                     __locationOfYs.append(row)
+                if __numberOfYs > 3:
+                    print("THERE ARE TOO MANY Ys IN COLUMN " + str(__column))
+                # tally up the ?s
                 if "?" in analyTable[row][__column]:
                     __numberOfQuestionMarks += 1
                     __locationOfQuestionMarks.append(row)
-                if __numberOfYs > 3:
-                    print("THERE ARE TOO MANY Ys IN COLUMN " + str(__column))
+
+
+                # check whether there are at least 2 cells that share a turnNumber
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL 
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
+                for x in range(turnNumber):
+                    for row in range(21):
+                        if (x+1) in analyTable[row][__column]:
+                            for rrow in range(21):
+                                if (x+1) in analyTable[row][__column] and row != rrow:        
+                                    doAtLeastTwoCellsShareATurnNumber = True
+
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
+
             if __numberOfYs == 3:
                 for y in range(21):
                     if y not in __locationOfYs and "-" not in analyTable[y][__column]:
@@ -479,7 +506,24 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
             if __numberOfYs == 2 and __numberOfQuestionMarks == 1:
                 # set the "?" to become a "Y"
                 analyTable[__locationOfQuestionMarks[0]][__column] = ["Y"]  
+                # IMMEDIATELY??? no we don't need to go up & down the column because the only reason we got here is because all the column has is two Ys and one ?
                 print("COLUMN " + str(__column) + " WAS FOUND TO HAVE TWO Ys AND ONE ?, SO WE TURNED THE ? AT ROW " + str(__locationOfQuestionMarks[0]) + " INTO A Y.")
+                
+
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
+            if __numberOfYs == 2 and doAtLeastTwoCellsShareATurnNumber:
+                # now we change all cells that only have ?, to '-'
+                for row in range(21):
+                    if analyTable[row][__column] == ["?"]:
+                        analyTable[row][__column] = ["-"]
+                        print("COLUMN " + str(__column) + " HAD TWO Ys AND AT LEAST ONE OTHER SET OF turnNUMBERS, SO AT ROW " + str(row) + " WE REPLACED THE LONE ? WITH '-'")
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
+
+
+
+
         checkForAllNegativesInRow(killerWeaponRoom, announces)
         checkForLastRemainingQuestionMarksInCategory()
 
@@ -515,7 +559,12 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         announcements[2] = True
 
 
-    def checkForLastRemainingQuestionMarksInCategory():             # this function should be called when Ys or ?s are added to the analysis table
+
+
+
+    def checkForLastRemainingQuestionMarksInCategory():             
+        # this function checks whether the last few (or single) ? in a section can be changed into a Y or Ys, or possibly a '-'
+        # this function should be called when Ys or ?s are added to the analysis table
         	# 		# of Y		# of ?		killer known?		action
 			#       n - 1		0		    yes			        none - prevent action!!!
 			#       n - 2		1		    yes			        turn the ? into Y			
@@ -526,6 +575,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 			# basically, if Y + ? = 5, and the killer is known, then the ? can safely be turned into Y
 			# and every time something is turned into Y we need to "clean" any turns associated with that something
+
+
 
         # scan the killers & tally up
         tallyKillerSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
@@ -582,6 +633,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         analyTable[row][column] = ["-"]   
                         print("A LONE ?, ALONG WITH 5 Y, WAS FOUND IN THE WEAPON SECTION AT " + str(row) + "/" + str(column) + ", AND THE ? WAS TURNED INTO '-'")                                 
 
+
         tallyRoomSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
         for row in range(12, 21):
             for column in range(6):
@@ -614,6 +666,131 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 
 
+
+
+    def checkForHalfwayKnownYsInSection():      # not sure yet if this is feasible... but it sounds like it is
+        doAtLeastTwoCellsInKillerSectionShareATurnNumber = False
+        discoveredTurnNumber = -1
+        # tally the number of Y in the KILLER section
+        numberOfYsInKillerSection = 0
+        for row in range(6):
+            for column in range(6):
+                if "Y" in analyTable[row][column]:
+                    numberOfYsInKillerSection += 1
+
+        # find out whether, in the section, there are 2 or more cells that share a turnNumber  ***AND*** that turnNumber does not exist in any other section
+        if numberOfYsInKillerSection == 4:  
+            for row in range(6):
+                for column in range(6):
+                    for turnMinusOne in range(turnNumber):
+                        if (turnMinusOne+1) in analyTable[row][column]:
+                            for rrow in range(6):       # because killers are in rows 0 thru 5
+                                if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
+                                    doAtLeastTwoCellsInKillerSectionShareATurnNumber = True
+                                    discoveredTurnNumber = turnMinusOne+1
+            # now find out whether than particular turnNumber appears in another section
+            doesTurnNumberAppearInOtherSection = True
+            for row in range(6, 21):
+                for column in range(6):
+                    if discoveredTurnNumber in analyTable[row][column]:
+                        doesTurnNumberAppearInOtherSection = False
+            if doAtLeastTwoCellsInKillerSectionShareATurnNumber and doesTurnNumberAppearInOtherSection:
+                # all cells with only a ? should be changed to '-'
+                for row in range(6):
+                    for column in range(6):
+                        if analyTable[row][column] == ["?"]:
+                            analyTable[row][column] = ["-"]
+                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+
+
+
+        doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = False
+        discoveredTurnNumber = -1
+        # tally the number of Y in the WEAPON section
+        numberOfYsInWEAPONSection = 0
+        for row in range(6, 12):
+            for column in range(6):
+                if "Y" in analyTable[row][column]:
+                    numberOfYsInWEAPONSection += 1
+
+        # find out whether, in the section, there are 2 or more cells that share a turnNumber  ***AND*** that turnNumber does not exist in any other section
+        if numberOfYsInWEAPONSection == 4:  
+            for row in range(6, 12):
+                for column in range(6):
+                    for turnMinusOne in range(turnNumber):
+                        if (turnMinusOne+1) in analyTable[row][column]:
+                            for rrow in range(6):       # because WEAPONs are in rows 0 thru 5
+                                if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
+                                    doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = True
+                                    discoveredTurnNumber = turnMinusOne+1
+			    for rrow in range(12, 21):       # because WEAPONs are in rows 0 thru 5
+                                if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
+                                    doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = True
+                                    discoveredTurnNumber = turnMinusOne+1
+            # now find out whether than particular turnNumber appears in another section
+            doesTurnNumberAppearInOtherSection = True
+            for row in range(6):
+                for column in range(6):
+                    if discoveredTurnNumber in analyTable[row][column]:
+                        doesTurnNumberAppearInOtherSection = False
+            for row in range(12, 21):
+                for column in range(6):
+                    if discoveredTurnNumber in analyTable[row][column]:
+                        doesTurnNumberAppearInOtherSection = False
+            if doAtLeastTwoCellsInWEAPONSectionShareATurnNumber and doesTurnNumberAppearInOtherSection:
+                # all cells with only a ? should be changed to '-'
+                for row in range(6, 12):
+                    for column in range(6):
+                        if analyTable[row][column] == ["?"]:
+                            analyTable[row][column] = ["-"]
+                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+
+
+        doAtLeastTwoCellsInROOMSectionShareATurnNumber = False
+        discoveredTurnNumber = -1
+        # tally the number of Y in the ROOM section
+        numberOfYsInROOMSection = 0
+        for row in range(12, 21):
+            for column in range(6):
+                if "Y" in analyTable[row][column]:
+                    numberOfYsInROOMSection += 1
+
+        # find out whether, in the section, there are 2 or more cells that share a turnNumber  ***AND*** that turnNumber does not exist in any other section
+        if numberOfYsInROOMSection == 4:  
+            for row in range(12, 21):
+                for column in range(6):
+                    for turnMinusOne in range(turnNumber):
+                        if (turnMinusOne+1) in analyTable[row][column]:
+                            for rrow in range(12, 21):       # because ROOMs are in rows 12 thru 20
+                                if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
+                                    doAtLeastTwoCellsInROOMSectionShareATurnNumber = True
+                                    discoveredTurnNumber = turnMinusOne+1
+            # now find out whether than particular turnNumber appears in another section
+            doesTurnNumberAppearInOtherSection = True
+            for row in range(12):
+                for column in range(6):
+                    if discoveredTurnNumber in analyTable[row][column]:
+                        doesTurnNumberAppearInOtherSection = False
+            if doAtLeastTwoCellsInROOMSectionShareATurnNumber and doesTurnNumberAppearInOtherSection:
+                # all cells with only a ? should be changed to '-'
+                for row in range(12, 21):
+                    for column in range(6):
+                        if analyTable[row][column] == ["?"]:
+                            analyTable[row][column] = ["-"]
+                            print("THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE ROOM SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+
+
+###################
+
+
+
+
+
+        # checkForAllNegativesInRow(killerWeaponRoom, announces)
+        # checkForLastRemainingQuestionMarksInCategory()
+
+
+
     def checkForSingleTurnNumbersInColumn():
         #   if a turnNumber appears only once in a column, we know that that player has that card
         #   loop thru each column, one at a time:
@@ -625,8 +802,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 __tally[__turn + 1] = 0
             # if we look at a cell, and see for example [4, 5], then we do: tally[4] += 1, and tally[5] += 1
             for row in range(21):
-                for x in range(turnNumber):
-                    __turnNumbah = x + 1
+                for turnMinusOne in range(turnNumber):
+                    __turnNumbah = turnMinusOne + 1
                     if __turnNumbah in analyTable[row][__column]:
                         __tally[__turnNumbah] += 1
             # now we've got our tally list... and we check to see if any turn# appears ONLY ONCE in the tally dictionary
@@ -657,6 +834,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         #   at end of this function, run horiz/vert again, because we may have added a "Y" into the analysisTable
         processYsHorizontal()       
         processYsVertical() 
+        checkForHalfwayKnownYsInSection()
 
 
 
@@ -750,13 +928,15 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
             processYsVertical()          # because this function can sometimes result in "Y"s being added, these 2 (horiz/vert) need to be run afterwards, every time
             checkForAllNegativesInRow(killerWeaponRoom, announces)
             checkForSingleTurnNumbersInColumn()
+            checkForHalfwayKnownYsInSection()
 
 
-    for x in range(1):      # this is a lazy way to make sure we process everything.... hopefully change this later
+    for turnMinusOne in range(1):      # this is a lazy way to make sure we process everything.... hopefully change this later
         processYsHorizontal()       # these two (horiz/vert) are run first thing in order to incorporate the user's 3 known cards
         processYsVertical()         # these two (horiz/vert) are run first thing in order to incorporate the user's 3 known cards
         processDecline()
         processRespond()            # there will always be 1 response, and possibly some declines, so always run these
+        checkForHalfwayKnownYsInSection()
 
     #add "cleanup" functionality here, in case the previous processes have revealed some important info ... because we want to show this info to the user before the next turn starts
 
