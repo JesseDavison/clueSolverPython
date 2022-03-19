@@ -5,6 +5,7 @@
 from asyncio.windows_utils import pipe
 from collections import UserString
 from dis import disco
+import filecmp
 from imghdr import what
 import random
 # import json
@@ -209,7 +210,7 @@ def correctTheOrder(inputList, playerOrderForFile):
             if player.getTurnOrder() == userInput and player.getConfirmedStatus() == False:
                 player.setTurnOrder(x)
                 playerOrderForFile.append(player.getNameOnly())
-                print("TESTING TESTING TESTING: " + str(playerOrderForFile))
+                # print("TESTING TESTING TESTING: " + str(playerOrderForFile))
                 player.turnOrderConfirmedSetTrue()
         x += 1
 
@@ -227,10 +228,13 @@ def verifyOrder(inputList):         # should return a boolean? yay or nay?
             player.turnOrderConfirmedSetTrue()
     else:
         correctTheOrder(inputList, playerOrderForFile)
-        fileObject = open('turnInfo.txt', 'a')
-        fileObject.write(str(playerOrderForFile) + "\n")
-        fileObject.close()
         printPlayerOrder(inputList, "Final player order:", False, False)
+    # print("about to write the player Order to the filelllele... it looks like: " + str(playerOrderForFile))
+    fileObject = open('turnInfo.txt', 'a')
+    fileObject.write(str(playerOrderForFile) + "\n")
+    fileObject.write("this is a temporary line 5, to be replaced by the first instance of turnDataDictionary. This line exists to prevent an index error\n")
+    fileObject.write("this is a temporary line 6, where the last completed turn # will go")
+    fileObject.close()    
 
 
 
@@ -413,13 +417,17 @@ def executeTurn(turnNumber, turnDataDictionary):
     printTurnsPretty(turnNumber, turnDataDictionary)
 
 
-    # open file for writing
-    f = open("turnInfo.txt", "w")
+    # copy the current contents of the turnInfo.txt file, and then replace the turnDataDictionary line with the newest turnDataDictionary
+    with open('turnInfo.txt', 'r') as fileObject:
+        currentContents = fileObject.readlines()
+    
+    
+    currentContents[5] = str(turnDataDictionary) + "\n"       # replace turnDataDictionary with the newest version
+    currentContents[6] = str(turnNumber)                # records the most recent completed turn (for the purpose of loading an old game)
 
-    # write file
-    f.write(str(turnDataDictionary))
-    # close file
-    f.close()
+    with open('turnInfo.txt', 'w') as fileObject:
+        fileObject.writelines(currentContents)
+
 
 
 
@@ -1028,54 +1036,68 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
 
 
 def startGame():
-    userCharacterName = ""
-    userCard1Name = ""
-    userCard2Name = ""
-    userCard3Name = ""
-    playerOrder = []
+    # userCharacterName = ""
+    # userCard1Name = ""
+    # userCard2Name = ""
+    # userCard3Name = ""
+    # playerOrder = []
 
     userCharacter = Player
-
+    turnNumber = -1
 
     # print("Do you want to load a previous game? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
-        
-        # need to identify the userCharacter **************************************
+        # Load up the game currently stored in turnInfo.txt
+        #   line 0: player name
+        #   line 1 2 3: player's 3 cards
+        #   line 4: player order
+        #   line 5: turnDataDictionary
+        with open("turnInfo.txt") as fileObject:
+            fileContents = fileObject.readlines()
 
-        # need to fix the player order *****************************************************
-            # BUT FIRST we need to establish how starting a NEW GAME will work... i.e., how we will save that info into the file
+        # print("PRINTING FILECONTENTS FOR DEBUGGING")
+        # print(fileContents)
 
+        playerName = fileContents[0].strip()        # .strip() will remove the /n newline character
+        for player in playerList:
+            if playerName == player.getNameOnly():
+                userCharacter = player
+        playerCard1 = fileContents[1].strip()
+        playerCard2 = fileContents[2].strip()
+        playerCard3 = fileContents[3].strip()
 
-        with open("turnInfo.txt") as f:
+        # identify the card objects, and then .add them to the player character
+        for card in cardList:
+            if playerCard1 == card.getPlaceInCardList():
+                userCharacter.addCard1(card)
+            if playerCard2 == card.getPlaceInCardList():
+                userCharacter.addCard2(card)
+            if playerCard3 == card.getPlaceInCardList():
+                userCharacter.addCard3(card)
 
-            # pull out the second line, which will have card1
-            #   use f.readline() instead of f.read()....???
-            # pull out card2
+        # next we set the player order 
+        playerOrderList = fileContents[4].strip()
+        x = 1
+        for element in playerOrderList:
+            for player in playerList:
+                if player.getNameOnly() == element:
+                    player.setTurnOrder(x)
+                    player.turnOrderConfirmedSetTrue()
+                    x += 1
 
-            # pull out card3
+                    
 
-            # pull out the last turn completed????  deal with this later
+        turnLog = ast.literal_eval(fileContents[5].strip())
+        # turnLog = fileContents[5].strip()     # this line doesn't work
 
-            # pull out the huge turn log
-            
-            
-            data = f.read()
-        turnLog = ast.literal_eval(data)
+        # print("TESTING TESTING 33: printing turnLog")
+        # print(turnLog)
 
         # print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
-        turnNumber = askUserInputInt([x for x in range(99)], "What was the last turn that was completed? Look at the .txt file if you're not sure. :  ")
-        turnNumber += 1
-        
-
-    # # open file for writing
-    # f = open("turnInfo.txt", "w")
-
-    # # write file
-    # f.write(str(turnDataDictionary))
-    # # close file
-    # f.close()
-
+        turnNumber = int(fileContents[6].strip())
+        printTurnsPretty(turnNumber, turnLog)
+        turnNumber += 1     # because (turnNumber) was completed successfully, the next turn we start with is turnNumber + 1
 
 
     else:
@@ -1084,6 +1106,8 @@ def startGame():
     # initialize a blank data table (nested dictionary) to record the events of each turn
         turnLog = {}
         turnNumber = 1
+
+
     # initialize an analysis table
     #   columns, then rows
     # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
