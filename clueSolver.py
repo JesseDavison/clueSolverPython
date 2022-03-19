@@ -10,6 +10,7 @@ from imghdr import what
 import random
 # import json
 import ast
+import os       # to be able to use os.scandir() to get the list of possible gameSaves to load
 
 print("CLUE SOLVER")
 
@@ -422,8 +423,8 @@ def executeTurn(turnNumber, turnDataDictionary):
         currentContents = fileObject.readlines()
     
     
-    currentContents[5] = str(turnDataDictionary) + "\n"       # replace turnDataDictionary with the newest version
-    currentContents[6] = str(turnNumber)                # records the most recent completed turn (for the purpose of loading an old game)
+    currentContents[5] = str(turnDataDictionary) + "\n"         # replace turnDataDictionary with the newest version
+    currentContents[6] = str(turnNumber)                        # records the most recent completed turn (for the purpose of loading an old game)
 
     with open('turnInfo.txt', 'w') as fileObject:
         fileObject.writelines(currentContents)
@@ -1034,6 +1035,52 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
     print(" ")
 
 
+def showSavedGames():
+        # EXPERIMENTING WITH os.scandir()
+    path = '/Users/test/ClueSolverPython'
+    # Scan the directory and get
+    # an iterator of os.DirEntry objects
+    # corresponding to entries in it
+    # using os.scandir() method
+    obj = os.scandir(path)
+    listOfSaveFiles = []
+
+    # List all files and directories
+    # in the specified path
+    # print("Files and Directories in '% s':" % path)
+    print("")
+    for entry in obj :
+        # if entry.is_dir() or entry.is_file():     # don't want directories to be printed
+        if entry.is_file() and ".txt" in entry.name:            
+            # print(entry.name)
+            listOfSaveFiles.append(str(entry.name))
+
+    
+    # To Close the iterator and free acquired resources use scandir.close() method
+    obj.close()
+
+    print("this is a list of saved game .txt files:")
+    x = 1
+    for entry in listOfSaveFiles:
+        print(str(x) + ". ", end="")
+        print(entry)
+        x += 1
+
+
+    userChoice = askUserInputInt([y+1 for y in range(x)], "which game do you want to load? :  ")
+    gameToLoad = -1
+    if userChoice == 1:
+        gameToLoad = str(listOfSaveFiles[0])
+    elif userChoice == 2:
+        gameToLoad = str(listOfSaveFiles[1])
+    elif userChoice == 3:
+        pass
+    elif userChoice == 4:
+        gameToLoad = str(listOfSaveFiles[3])
+
+    return gameToLoad
+
+
 
 def startGame():
     # userCharacterName = ""
@@ -1045,39 +1092,43 @@ def startGame():
     userCharacter = Player
     turnNumber = -1
 
+
+
+
     # print("Do you want to load a previous game? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
-        # Load up the game currently stored in turnInfo.txt
-        #   line 0: player name
-        #   line 1 2 3: player's 3 cards
-        #   line 4: player order
-        #   line 5: turnDataDictionary
-        with open("turnInfo.txt") as fileObject:
+
+        fileToLoad = showSavedGames()
+
+        print("LOADING FILE: " + str(fileToLoad))
+
+        with open(str(fileToLoad)) as fileObject:
             fileContents = fileObject.readlines()
 
         # print("PRINTING FILECONTENTS FOR DEBUGGING")
         # print(fileContents)
 
-        playerName = fileContents[0].strip()        # .strip() will remove the /n newline character
+        playerName = fileContents[0].strip()        # .strip() will remove the /n newline character     # line 0 is the player name
         for player in playerList:
             if playerName == player.getNameOnly():
                 userCharacter = player
-        playerCard1 = fileContents[1].strip()
+        playerCard1 = fileContents[1].strip()       #   line 1 2 3 are the player's 3 cards
         playerCard2 = fileContents[2].strip()
         playerCard3 = fileContents[3].strip()
 
         # identify the card objects, and then .add them to the player character
         for card in cardList:
-            if playerCard1 == card.getPlaceInCardList():
+            cardNum = card.getPlaceInCardList()
+            if playerCard1 == cardNum:
                 userCharacter.addCard1(card)
-            if playerCard2 == card.getPlaceInCardList():
+            if playerCard2 == cardNum:
                 userCharacter.addCard2(card)
-            if playerCard3 == card.getPlaceInCardList():
+            if playerCard3 == cardNum:
                 userCharacter.addCard3(card)
 
         # next we set the player order 
-        playerOrderList = fileContents[4].strip()
+        playerOrderList = fileContents[4].strip()       # line 4 is the player order
         x = 1
         for element in playerOrderList:
             for player in playerList:
@@ -1086,10 +1137,8 @@ def startGame():
                     player.turnOrderConfirmedSetTrue()
                     x += 1
 
-                    
-
-        turnLog = ast.literal_eval(fileContents[5].strip())
-        # turnLog = fileContents[5].strip()     # this line doesn't work
+        turnLog = ast.literal_eval(fileContents[5].strip())     # line 5 is the turnDataDictionary
+        # turnLog = fileContents[5].strip()     # this line doesn't work on a dictionary object
 
         # print("TESTING TESTING 33: printing turnLog")
         # print(turnLog)
