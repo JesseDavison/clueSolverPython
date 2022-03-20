@@ -10,7 +10,8 @@ from imghdr import what
 import random
 # import json
 import ast
-import os       # to be able to use os.scandir() to get the list of possible gameSaves to load
+import os           # to be able to use os.scandir() to get the list of possible gameSaves to load
+import datetime     # to be able to timestamp new files that are created
 
 print("CLUE SOLVER")
 
@@ -66,6 +67,7 @@ studyCard =         Card("Study", "room", 20)
 
 cardList = [greenCard, mustardCard, peacockCard, plumCard, scarlettCard, orchidCard, candlestickCard, daggerCard, pipeCard, revolverCard, ropeCard, wrenchCard, ballroomCard, billiardRoomCard, conservatoryCard, diningRoomCard, hallCard, kitchenCard, libraryCard, loungeCard, studyCard]
 
+print("TESTING: PRINT CARD: " + str(cardList[20]))
 
 class Player:
     def __init__(self, name, turn = -1, column = -1) -> None:
@@ -216,7 +218,7 @@ def correctTheOrder(inputList, playerOrderForFile):
         x += 1
 
 
-def verifyOrder(inputList):         # should return a boolean? yay or nay?
+def verifyOrder(inputList, uniqueFileName):         # should return a boolean? yay or nay?
     printPlayerOrder(inputList, "Current player order (using verifyOrder function)", False, True)
     # userInput = input("Is this order correct? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Is this order correct? (y/n):  ")
@@ -231,7 +233,7 @@ def verifyOrder(inputList):         # should return a boolean? yay or nay?
         correctTheOrder(inputList, playerOrderForFile)
         printPlayerOrder(inputList, "Final player order:", False, False)
     # print("about to write the player Order to the filelllele... it looks like: " + str(playerOrderForFile))
-    fileObject = open('turnInfo.txt', 'a')
+    fileObject = open(uniqueFileName, 'a')
     fileObject.write(str(playerOrderForFile) + "\n")
     fileObject.write("this is a temporary line 5, to be replaced by the first instance of turnDataDictionary. This line exists to prevent an index error\n")
     fileObject.write("this is a temporary line 6, where the last completed turn # will go")
@@ -240,60 +242,47 @@ def verifyOrder(inputList):         # should return a boolean? yay or nay?
 
 
 
-def askUserWhichCharacter(loadFromFileUserCharacter = -12, loadFromFileCard1 = -11, loadFromFileCard2 = -11, loadFromFileCard3 = -11):
+def askUserWhichCharacter(uniqueFileName):
         # the goal here is to be able to ask the user to name the 3 cards held by a certain player... it might not matter much beyond that...?
 
     usersCharacter = Player    
-    if loadFromFileUserCharacter != -12:
-        usersCharacter = loadFromFileUserCharacter
-    else:
-        printPlayerOrder(playerList, "Which character are you playing as?", False, True)
-        # userInputPlayer = int(input(" "))
-        userInputPlayer = askUserInputInt([1, 2, 3, 4, 5, 6], "")
-        #use this integer to identify the user's character
-        for player in playerList:
-            if player.getTurnOrder() == userInputPlayer:
-                usersCharacter = player
+    printPlayerOrder(playerList, "Which character are you playing as?", False, True)
+    # userInputPlayer = int(input(" "))
+    userInputPlayer = askUserInputInt([1, 2, 3, 4, 5, 6], "")
+    #use this integer to identify the user's character
+    for player in playerList:
+        if player.getTurnOrder() == userInputPlayer:
+            usersCharacter = player
 
-        # wipe the turnInfo.txt file, and write this info to file
-        fileObject = open('turnInfo.txt', 'w')
-        fileObject.write(str(usersCharacter.getNameOnly()) + "\n")
-        fileObject.close()
+    # write this info to file
+    fileObject = open(uniqueFileName, 'w')
+    fileObject.write(str(usersCharacter.getNameOnly()) + "\n")
+    fileObject.close()
 
+    print("Which cards do you have? Please enter 3 integers on 3 separate lines.")
+    #print list of all cards, with numbers
+    x = 1
+    while(x <= len(cardList)):
+        for card in cardList:
+            print("    ", end=" ")
+            print(card.getNumberAndName())
+            x += 1
+    #user enters the integers, each on a separate line
+    possibleCards = [x for x in range(21)]
+    userCard1 = askUserInputInt(possibleCards, "First Card. Type a number from 0 to 20: ")
+    fileObject = open(uniqueFileName, 'a')
+    fileObject.write(str(userCard1) + "\n")
+    fileObject.close()
 
+    userCard2 = askUserInputInt(possibleCards, "Second Card. Type a number from 0 to 20: ")
+    fileObject = open(uniqueFileName, 'a')
+    fileObject.write(str(userCard2) + "\n")
+    fileObject.close()
 
-    userCard1 = -5
-    userCard2 = -5
-    userCard3 = -5
-    if loadFromFileCard1 != -11:
-        userCard1 = loadFromFileCard1
-        userCard2 = loadFromFileCard2
-        userCard3 = loadFromFileCard3
-    else:
-        print("Which cards do you have? Please enter 3 integers on 3 separate lines.")
-        #print list of all cards, with numbers
-        x = 1
-        while(x <= len(cardList)):
-            for card in cardList:
-                print("    ", end=" ")
-                print(card.getNumberAndName())
-                x += 1
-        #user enters the integers, each on a separate line
-        possibleCards = [x for x in range(21)]
-        userCard1 = askUserInputInt(possibleCards, "First Card. Type a number from 0 to 20: ")
-        fileObject = open('turnInfo.txt', 'a')
-        fileObject.write(str(userCard1) + "\n")
-        fileObject.close()
-
-        userCard2 = askUserInputInt(possibleCards, "Second Card. Type a number from 0 to 20: ")
-        fileObject = open('turnInfo.txt', 'a')
-        fileObject.write(str(userCard2) + "\n")
-        fileObject.close()
-
-        userCard3 = askUserInputInt(possibleCards, "Third Card. Type a number from 0 to 20: ")
-        fileObject = open('turnInfo.txt', 'a')
-        fileObject.write(str(userCard3) + "\n")
-        fileObject.close()
+    userCard3 = askUserInputInt(possibleCards, "Third Card. Type a number from 0 to 20: ")
+    fileObject = open(uniqueFileName, 'a')
+    fileObject.write(str(userCard3) + "\n")
+    fileObject.close()
 
 
     #use self.addToCardList 3 times to add the three cards
@@ -340,7 +329,7 @@ def convertTurnToPlayerTurn(turn):
     return ((turn - 1) % 6) + 1
 
 
-def executeTurn(turnNumber, turnDataDictionary):
+def executeTurn(turnNumber, turnDataDictionary, uniqueFileName):
     # identify the guessing player by converting the turn number into playerTurn
     activePlayer = Player
     for player in playerList:
@@ -419,14 +408,14 @@ def executeTurn(turnNumber, turnDataDictionary):
 
 
     # copy the current contents of the turnInfo.txt file, and then replace the turnDataDictionary line with the newest turnDataDictionary
-    with open('turnInfo.txt', 'r') as fileObject:
+    with open(uniqueFileName, 'r') as fileObject:
         currentContents = fileObject.readlines()
     
     
     currentContents[5] = str(turnDataDictionary) + "\n"         # replace turnDataDictionary with the newest version
     currentContents[6] = str(turnNumber)                        # records the most recent completed turn (for the purpose of loading an old game)
 
-    with open('turnInfo.txt', 'w') as fileObject:
+    with open(uniqueFileName, 'w') as fileObject:
         fileObject.writelines(currentContents)
 
 
@@ -1035,18 +1024,13 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
     print(" ")
 
 
-def showSavedGames():
-        # EXPERIMENTING WITH os.scandir()
+def showSavedGames():       # EXPERIMENTING WITH os.scandir()
     path = '/Users/test/ClueSolverPython'
-    # Scan the directory and get
-    # an iterator of os.DirEntry objects
-    # corresponding to entries in it
-    # using os.scandir() method
+    # Scan the directory and get an iterator of os.DirEntry objects corresponding to entries in it using os.scandir() method
     obj = os.scandir(path)
     listOfSaveFiles = []
 
-    # List all files and directories
-    # in the specified path
+    # List all files and directories in the specified path
     # print("Files and Directories in '% s':" % path)
     print("")
     for entry in obj :
@@ -1055,15 +1039,14 @@ def showSavedGames():
             # print(entry.name)
             listOfSaveFiles.append(str(entry.name))
 
-    
-    # To Close the iterator and free acquired resources use scandir.close() method
+    # To close the iterator and free acquired resources use scandir.close() method
     obj.close()
 
     print("this is a list of saved game .txt files:")
     x = 1
     for entry in listOfSaveFiles:
-        print(str(x) + ". ", end="")
-        print(entry)
+        print(str(x) + ". " + str(entry))
+        # print(entry)
         x += 1
 
 
@@ -1083,23 +1066,23 @@ def showSavedGames():
 
 
 def startGame():
-    # userCharacterName = ""
-    # userCard1Name = ""
-    # userCard2Name = ""
-    # userCard3Name = ""
-    # playerOrder = []
 
+    # initialize a bunch of stuff
     userCharacter = Player
     turnNumber = -1
-
-
-
+    # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
+    analysisTable = [[ ["?"] for i in range(6)] for j in range(21)]
+    actualKillerWeaponRoom = ["?", "?", "?"]
+    announcementsHaveBeenMadeForKillerWeaponRoom = [False, False, False]   # this regulates when, in the terminal, the discovery of the killer/weapon/room is announced
+    fileName = ""
 
     # print("Do you want to load a previous game? (y/n)")
     userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
 
         fileToLoad = showSavedGames()
+
+        # fileToLoad is the file to which we save future progress
 
         print("LOADING FILE: " + str(fileToLoad))
 
@@ -1109,15 +1092,15 @@ def startGame():
         # print("PRINTING FILECONTENTS FOR DEBUGGING")
         # print(fileContents)
 
-        playerName = fileContents[0].strip()        # .strip() will remove the /n newline character     # line 0 is the player name
+        playerName = str(fileContents[0]).strip()        # .strip() will remove the /n newline character     # line 0 is the player name
         for player in playerList:
             if playerName == player.getNameOnly():
                 userCharacter = player
-        playerCard1 = fileContents[1].strip()       #   line 1 2 3 are the player's 3 cards
-        playerCard2 = fileContents[2].strip()
-        playerCard3 = fileContents[3].strip()
+        playerCard1 = int(fileContents[1].strip())       #   line 1 2 3 are the player's 3 cards
+        playerCard2 = int(fileContents[2].strip())
+        playerCard3 = int(fileContents[3].strip())
 
-        # identify the card objects, and then .add them to the player character
+        # identify the card objects, and then .add them to the player character... they will be processed in the first part of the analyzeData() function
         for card in cardList:
             cardNum = card.getPlaceInCardList()
             if playerCard1 == cardNum:
@@ -1128,7 +1111,12 @@ def startGame():
                 userCharacter.addCard3(card)
 
         # next we set the player order 
-        playerOrderList = fileContents[4].strip()       # line 4 is the player order
+        playerOrderList = fileContents[4].strip()       # line 4 is the player order... need to ensure that this is saved as an actual list, because right now it's a string
+        newPlayerOrderList = playerOrderList.replace('[', '')
+        newPlayerOrderList = newPlayerOrderList.replace(']', '')    # get rid of the extra characters before we convert it into a list with " " as delimiter
+        newPlayerOrderList = newPlayerOrderList.replace('\'', '')
+        newPlayerOrderList = newPlayerOrderList.replace(',', '')
+        playerOrderList = list(newPlayerOrderList.split(" "))
         x = 1
         for element in playerOrderList:
             for player in playerList:
@@ -1146,28 +1134,26 @@ def startGame():
         # print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
         turnNumber = int(fileContents[6].strip())
         printTurnsPretty(turnNumber, turnLog)
+        print("")
+        analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom, announcementsHaveBeenMadeForKillerWeaponRoom)
+        printAnalysisTable(analysisTable, actualKillerWeaponRoom)
         turnNumber += 1     # because (turnNumber) was completed successfully, the next turn we start with is turnNumber + 1
 
-
     else:
-        userCharacter = askUserWhichCharacter()
-        verifyOrder(playerList)
-    # initialize a blank data table (nested dictionary) to record the events of each turn
+        # create a timestamp, for the purpose of making a unique filename
+        x = datetime.datetime.now()
+        timeStamp = str(x.year) + "-" + str(x.month) + "-" + str(x.day) + " " + str(x.hour) + "h" + str(x.minute) + "m" + str(x.second) + "s"
+        fileName = "ClueSolverGameSave " + str(timeStamp) + ".txt"
+
+        userCharacter = askUserWhichCharacter(fileName)
+        verifyOrder(playerList, fileName)
+        # initialize a blank data table (nested dictionary) to record the events of each turn
         turnLog = {}
         turnNumber = 1
 
-
-    # initialize an analysis table
-    #   columns, then rows
-    # analysisTable = [["?"]*6]*21        # can't initialize with this technique because it creates a "shallow list", see https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
-    analysisTable = [[ ["?"] for i in range(6)] for j in range(21)]
-    actualKillerWeaponRoom = ["?", "?", "?"]
-    announcementsHaveBeenMadeForKillerWeaponRoom = [False, False, False]   # this regulates when, in the terminal, the discovery of the killer/weapon/room is announced
-
-
     gameFinished = False
     while (gameFinished == False): 
-        executeTurn(turnNumber, turnLog)      
+        executeTurn(turnNumber, turnLog, fileName)      
         analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom, announcementsHaveBeenMadeForKillerWeaponRoom)
         printAnalysisTable(analysisTable, actualKillerWeaponRoom)
         # print(turnLog)
