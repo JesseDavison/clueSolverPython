@@ -12,9 +12,10 @@ import random
 import ast
 import os           # to be able to use os.scandir() to get the list of possible gameSaves to load
 import datetime     # to be able to timestamp new files that are created
+from kivy.app import App
+
 
 print("CLUE SOLVER")
-
 
 
 
@@ -67,7 +68,6 @@ studyCard =         Card("Study", "room", 20)
 
 cardList = [greenCard, mustardCard, peacockCard, plumCard, scarlettCard, orchidCard, candlestickCard, daggerCard, pipeCard, revolverCard, ropeCard, wrenchCard, ballroomCard, billiardRoomCard, conservatoryCard, diningRoomCard, hallCard, kitchenCard, libraryCard, loungeCard, studyCard]
 
-print("TESTING: PRINT CARD: " + str(cardList[20]))
 
 class Player:
     def __init__(self, name, turn = -1, column = -1) -> None:
@@ -345,9 +345,6 @@ def executeTurn(turnNumber, turnDataDictionary, uniqueFileName):
     turnDataDictionary[turnNumber] = {}
     turnDataDictionary[turnNumber]['guesser'] = activePlayerName
 
-    # prompt the player to enter info
-    # print("Enter the killer guessed: ")
-    #           **** print a list of possible killers
     for x in range(6):
         print(str(x) + ". " + str(cardList[x].getName()))
     playerInput = askUserInputInt([-1, 0, 1, 2, 3, 4, 5], "Enter the killer guessed (enter -1 if a guess wasn't able to be made): ")
@@ -380,7 +377,6 @@ def executeTurn(turnNumber, turnDataDictionary, uniqueFileName):
             if player.getTurnOrder() == respondentTurnOrder:
                 respondentName = player.getNameOnly()
                 if didSomeoneRespond == False:
-                    # print("What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined to respond, r = responded")
                     playerInput = askUserInputChar(["n", "d", "r"], "What was the response of " + str(respondentName) + "? n = null (wasn't asked), d = declined, r = responded:  ")
                     tempString = str(respondentName).lower() + "Response"            
                     turnDataDictionary[turnNumber][tempString] = playerInput
@@ -406,11 +402,9 @@ def executeTurn(turnNumber, turnDataDictionary, uniqueFileName):
     # print out the turns in the terminal, for reference
     printTurnsPretty(turnNumber, turnDataDictionary)
 
-
     # copy the current contents of the turnInfo.txt file, and then replace the turnDataDictionary line with the newest turnDataDictionary
     with open(uniqueFileName, 'r') as fileObject:
         currentContents = fileObject.readlines()
-    
     
     currentContents[5] = str(turnDataDictionary) + "\n"         # replace turnDataDictionary with the newest version
     currentContents[6] = str(turnNumber)                        # records the most recent completed turn (for the purpose of loading an old game)
@@ -449,9 +443,6 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
             if "Y" in analyTable[row][columnNum]:
                 numberOfYs += 1
         return numberOfYs
-
-
-
 
     #   next, mark those rows with "-" to indicate it's impossible that other players have those same cards
     def processYsHorizontal():
@@ -519,7 +510,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         #             BOOM we know that all cells that ONLY HAVE a ? should be changed to '-'        
 
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL 
-                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
+                # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL     
+                #   here we            
                 for x in range(turnNumber):
                     for row in range(21):
                         if (x+1) in analyTable[row][__column]:
@@ -547,6 +539,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
             if __numberOfYs == 2 and doAtLeastTwoCellsShareATurnNumber:
                 # now we change all cells that only have ?, to '-'
+                # if there are two Ys in the column, and one set of turn numbers, all ? cells should be a '-'
                 for row in range(21):
                     if analyTable[row][__column] == ["?"]:
                         analyTable[row][__column] = ["-"]
@@ -554,6 +547,24 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         print("     This is experimental... so if this is working please remove this comment")
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
+
+            # Now, what if there is one Y and two "groups" of turnNumbers? For example, the Scarlett card & candlestick card were both part of a response on turn 1, and
+            # wrench & billiard were both part of a response on turn 7. This means that every other ? in the column should be a '-'
+            #   the first step is to identify the "groups"... which we will define as cells within the column that share the same set of turn numbers
+            group1 = []
+            group2 = []
+            possibleTurnNumbers = [x+1 for x in range(turnNumber)]
+            # possibleTurnNumbers = [1, 2, 3, 4, 5, 6, 7, 8]
+            for row in range(21):
+                for turn in possibleTurnNumbers:
+                    if turn in analyTable[row][__column] and turn not in group2:       # changed __column to 1 for debugging
+                        group1.append(turn)
+                        print("group1: " + str(group1) + "              column: " + str(__column) + " row: " + str(row))
+                    elif turn in analyTable[row][__column] and turn not in group1:
+                        group2.append(turn)
+                        print("     group2: " + str(group2))
+                    
+
 
 
 
@@ -611,7 +622,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 			# and every time something is turned into Y we need to "clean" any turns associated with that something
 
 
-
+        #####################################################################################
         # scan the killers & tally up
         tallyKillerSection = [0, 0]       # tallyKillerSection[0] = number of Y, tallyKillerSection[1] = number of ?
         for row in range(6):
@@ -716,7 +727,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
         # because this function adds Ys to the analysis table, it should call....
         # processRespond()      # i'm afraid of creating an infinite loop
-
+        checkForAllNegativesInRow(killerWeaponRoom, announces)
 
 
 
@@ -742,14 +753,14 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
                                     doAtLeastTwoCellsInKillerSectionShareATurnNumber = True
                                     discoveredTurnNumber = turnMinusOne+1
-            # now find out whether than particular turnNumber appears in another section
-            doesTurnNumberAppearInOtherSection = True
+            # now find out whether that particular turnNumber appears in another section
+            doesTurnNumberAppearInOtherSection = False
             for row in range(6, 21):
-                for column in range(6):
+                for column in range(6):             
                     if discoveredTurnNumber in analyTable[row][column]:
-                        doesTurnNumberAppearInOtherSection = False
-            if doAtLeastTwoCellsInKillerSectionShareATurnNumber and doesTurnNumberAppearInOtherSection:
-                # all cells with only a ? should be changed to '-'
+                        doesTurnNumberAppearInOtherSection = True
+            if doAtLeastTwoCellsInKillerSectionShareATurnNumber and not doesTurnNumberAppearInOtherSection:
+                # all cells in the KILLER SECTION with only a ? should be changed to '-'
                 for row in range(6):
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
@@ -781,14 +792,14 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
                                     doAtLeastTwoCellsInWEAPONSectionShareATurnNumber = True
                                     discoveredTurnNumber = turnMinusOne+1
-            # now find out whether than particular turnNumber appears in another section
+            # now find out whether that particular turnNumber appears in another section
             doesTurnNumberAppearInOtherSection = True
             for row in range(6):
                 for column in range(6):
                     if discoveredTurnNumber in analyTable[row][column]:
                         doesTurnNumberAppearInOtherSection = False
             for row in range(12, 21):
-                for column in range(6):
+                for column in range(6):                                             # the True and False are reversed... but it doesn't matter because it works
                     if discoveredTurnNumber in analyTable[row][column]:
                         doesTurnNumberAppearInOtherSection = False
             if doAtLeastTwoCellsInWEAPONSectionShareATurnNumber and doesTurnNumberAppearInOtherSection:
@@ -819,7 +830,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if (turnMinusOne+1) in analyTable[rrow][column] and row != rrow:      # don't mention column because only 1 player can respond per turn
                                     doAtLeastTwoCellsInROOMSectionShareATurnNumber = True
                                     discoveredTurnNumber = turnMinusOne+1
-            # now find out whether than particular turnNumber appears in another section
+            # now find out whether that particular turnNumber appears in another section
             doesTurnNumberAppearInOtherSection = True
             for row in range(12):
                 for column in range(6):
@@ -1025,7 +1036,7 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
 
 
 def showSavedGames():       # EXPERIMENTING WITH os.scandir()
-    path = '/Users/test/ClueSolverPython'
+    path = os.getcwd()
     # Scan the directory and get an iterator of os.DirEntry objects corresponding to entries in it using os.scandir() method
     obj = os.scandir(path)
     listOfSaveFiles = []
@@ -1051,16 +1062,7 @@ def showSavedGames():       # EXPERIMENTING WITH os.scandir()
 
 
     userChoice = askUserInputInt([y+1 for y in range(x)], "which game do you want to load? :  ")
-    gameToLoad = -1
-    if userChoice == 1:
-        gameToLoad = str(listOfSaveFiles[0])
-    elif userChoice == 2:
-        gameToLoad = str(listOfSaveFiles[1])
-    elif userChoice == 3:
-        pass
-    elif userChoice == 4:
-        gameToLoad = str(listOfSaveFiles[3])
-
+    gameToLoad = str(listOfSaveFiles[userChoice - 1])    
     return gameToLoad
 
 
@@ -1080,13 +1082,13 @@ def startGame():
     userInput = askUserInputChar(["y", "n"], "Do you want to load a previous game? (y/n):  ")
     if userInput == "y":
 
-        fileToLoad = showSavedGames()
+        fileName = showSavedGames()
 
         # fileToLoad is the file to which we save future progress
 
-        print("LOADING FILE: " + str(fileToLoad))
+        print("LOADING FILE: " + str(fileName))
 
-        with open(str(fileToLoad)) as fileObject:
+        with open(str(fileName)) as fileObject:
             fileContents = fileObject.readlines()
 
         # print("PRINTING FILECONTENTS FOR DEBUGGING")
@@ -1127,9 +1129,6 @@ def startGame():
 
         turnLog = ast.literal_eval(fileContents[5].strip())     # line 5 is the turnDataDictionary
         # turnLog = fileContents[5].strip()     # this line doesn't work on a dictionary object
-
-        # print("TESTING TESTING 33: printing turnLog")
-        # print(turnLog)
 
         # print("what was the last turn that was completed? Look at the .txt file if you're not sure.")
         turnNumber = int(fileContents[6].strip())
