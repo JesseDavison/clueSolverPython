@@ -544,7 +544,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if analyTable[row][__column] == ["?"]:
                         analyTable[row][__column] = ["-"]
                         print("(vertical function) COLUMN " + str(__column) + " HAD TWO Ys AND AT LEAST ONE OTHER SET OF turnNUMBERS, SO AT ROW " + str(row) + " WE REPLACED THE LONE ? WITH '-'")
-                        print("     This is experimental... so if this is working please remove this comment")
+                        # print("     This is experimental... so if this is working please remove this comment")
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
 
@@ -570,6 +570,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 groupXTurnNumbers = [ [] for i in range(10)]	# we're assuming that there will never be more than 10 groups... doesn't feel like a dangerous assumption in a six player game.....
                 # groupXTurnNumbers[0] = ['?', 'Y', '-']
 
+                    # critical to the proper functioning of this function is that it is never run on a cell unless that cell contains a turnNumber
                 def putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber):	
                     if cellsInGroup[groupNumber] == []:                      # if there are no cells in this group, then... 
                         cellsInGroup[groupNumber].append(rowNumber)          # add this cell/rowNumber to groupXCells[groupNumber]
@@ -590,7 +591,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             cellsInGroup[groupNumber].append(rowNumber)
                             # and add these turnNumbers to turnNumbersInGroup
                             for turnNumber in analyTable[rowNumber][columnNumber]:
-                                if turnNumber not in turnNumbersInGroup[groupNumber]:
+                                if turnNumber not in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):       
                                     turnNumbersInGroup[groupNumber].append(turnNumber)
                         else: # if NONE of the turnNumbers in this cell are in groupXTurnNumbers:
                             putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber + 1)		# recursion - this will end on its own eventually
@@ -789,7 +790,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         whatWasRemoved = []
                         whatWasRemoved = analyTable[row][column]
                         analyTable[row][column] = ["Y"]
-                        print("IN THE WEAPON SECTION THERE WERE " + str(tallyKillerSection[0]) + " Ys AND " + str(tallyKillerSection[1]) + " ?s, SO WE TURNED THE ? AT " + str(row) + "/" + str(column) + " INTO Y.")
+                        print("IN THE WEAPON SECTION THERE WERE " + str(tallyWeaponSection[0]) + " Ys AND " + str(tallyWeaponSection[1]) + " ?s, SO WE TURNED THE ? AT " + str(row) + "/" + str(column) + " INTO Y.")
                         for rrow in range(21):
                             for element in whatWasRemoved:
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
@@ -824,7 +825,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         whatWasRemoved = []
                         whatWasRemoved = analyTable[row][column]
                         analyTable[row][column] = ["Y"]
-                        print("IN THE ROOM SECTION THERE WERE " + str(tallyKillerSection[0]) + " Ys AND " + str(tallyKillerSection[1]) + " ?s, SO WE TURNED THE ? AT " + str(row) + "/" + str(column) + " INTO Y.")
+                        print("IN THE ROOM SECTION THERE WERE " + str(tallyRoomSection[0]) + " Ys AND " + str(tallyRoomSection[1]) + " ?s, SO WE TURNED THE ? AT " + str(row) + "/" + str(column) + " INTO Y.")
                         for rrow in range(21):
                             for element in whatWasRemoved:
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
@@ -846,11 +847,48 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         # processRespond()      # i'm afraid of creating an infinite loop
         checkForAllNegativesInRow(killerWeaponRoom, announces)
 
+    # EXPERIMENTAL March 23 2022
+    # need to play the March 22 game thru to the end to easily have some counterexamples that will prove this logic wrong
+    #       solution: green wrench conservatory
+    #       SCRAP THIS FUNCTION THE LOGIC IS ALL WRONG
+    def checkIfYsPlusNumberOfCellsWithTurnNumbersEqualsNminusOne():     # this function adds '-' & 'Y', and removes '?' and turnNumbers
+        pass
+        # for example, in the weapons category (where there are 6 possible weapons), if the number of Ys + the number of cells with turnNumbers = 5, then we know that
+        # those turnNumber cells should be changed to 'Y' and all cells with only '?' should be changed to '-'
+        # BOOYAH
+        # killerSectionRowRange = [row for row in range(6)]
+        # weaponSectionRowRange = [row for row in range(6, 12)]
+        # roomSectionRowRange = [row for row in range(12, 21)]
+
+        # listOfRowRanges = [killerSectionRowRange, weaponSectionRowRange, roomSectionRowRange]
+
+        # for rowRange in listOfRowRanges:
+        #     numberOfYs = 0
+        #     numberOfCellsWithTurnNumbers = 0
+        #     for row in rowRange:
+        #         for column in range(6):
+        #             if 'Y' in analyTable[row][column]:
+        #                 numberOfYs += 1
+        #             for turnNumberMinusOne in range(turnNumber):
+        #                 if turnNumberMinusOne+1 in analyTable[row][column]:
+        #                     numberOfCellsWithTurnNumbers += 1
+        #     if numberOfYs + numberOfCellsWithTurnNumbers == 5:
+        #         # printAnalysisTable()
+        #         # then change the cells: ? becomes -, and cells with turnNumbers become Y
+        #         print("WE DISCOVERED THAT IN THE row range of " + str(rowRange) + " the sum of Ys + number of cells with turnNumbers = n-1... so we made some drastic changes")
+        #         for row in rowRange:
+        #             for column in range(6):
+        #                 if analyTable[row][column] == ['?']:
+        #                     analyTable[row][column] = ['-']
+        #                 for turnNumberMinusOne in range(turnNumber):
+        #                     if turnNumberMinusOne+1 in analyTable[row][column]:
+        #                         analyTable[row][column] = ['Y']
 
 
 
 
     def checkForHalfwayKnownYsInSection():      # not sure yet if this is feasible... but it sounds like it is
+                                                #   update: it is NOT feasible because only 1 killer can be guessed per turn.... GALLLL
         doAtLeastTwoCellsInKillerSectionShareATurnNumber = False
         discoveredTurnNumber = -1
         # tally the number of Y in the KILLER section
@@ -882,7 +920,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("this should never run because 2 killers can't be guessed at same time: (halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE KILLER SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
 
         ########################################################################################################
@@ -925,7 +963,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("this should never run because 2 weapons can't be guessed at same time: (halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE WEAPON SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
         ########################################################################################################
         doAtLeastTwoCellsInROOMSectionShareATurnNumber = False
@@ -959,7 +997,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for column in range(6):
                         if analyTable[row][column] == ["?"]:
                             analyTable[row][column] = ["-"]
-                            print("(halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE ROOM SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
+                            print("this should never run because 2 rooms can't be guessed at same time: (halfway function) THE CELL AT " + str(row) + "/" + str(column) + " WAS CHANGED FROM ? TO '-' BECAUSE IN THE ROOM SECTION WE FOUND 4 Ys AND A turnNUMBER UNIQUE TO THE SECTION")
 
 
 ###################
@@ -1003,7 +1041,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             whatWasThere = []
                             whatWasThere = analyTable[row][__column]
                             analyTable[row][__column] = ["Y"]
-                            print("...AND DELETED IT AT ROW " + str(row))
+                            print("...AND REPLACED IT WITH A 'Y' AT ROW " + str(row))
                             # IMMEDIATELY we need to go up & down that column and remove the turn numbers that USED TO BE in the cell where we're putting the "Y"
                             if "Y" not in whatWasThere and "-" not in whatWasThere:
                                 for row in range(21):
@@ -1017,6 +1055,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         processYsHorizontal()       
         processYsVertical() 
         checkForHalfwayKnownYsInSection()
+        checkIfYsPlusNumberOfCellsWithTurnNumbersEqualsNminusOne()
 
 
 
@@ -1111,6 +1150,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
             checkForAllNegativesInRow(killerWeaponRoom, announces)
             checkForSingleTurnNumbersInColumn()
             checkForHalfwayKnownYsInSection()
+            checkIfYsPlusNumberOfCellsWithTurnNumbersEqualsNminusOne()
 
 
     for turnMinusOne in range(1):      # this is a lazy way to make sure we process everything.... hopefully change this later
@@ -1119,6 +1159,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
         processDecline()
         processRespond()            # there will always be 1 response, and possibly some declines, so always run these
         checkForHalfwayKnownYsInSection()
+        checkIfYsPlusNumberOfCellsWithTurnNumbersEqualsNminusOne()
 
     #add "cleanup" functionality here, in case the previous processes have revealed some important info ... because we want to show this info to the user before the next turn starts
 
@@ -1145,6 +1186,8 @@ def printAnalysisTable(table, actualKillerWeaponRoom):
             # if the output would be "-" then just leave it blank, otherwise print it
             if "-" in table[row][column]:
                 print("-".center(15, ' '), end=" ")
+            # elif table[row][column] == ['?']:
+            #     print('?'.center(15, ' '), end=" ")
             else:
                 print(str(table[row][column]).center(15, ' '), end=" ")
         print(" |")
