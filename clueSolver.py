@@ -12,7 +12,7 @@ import random
 import ast
 import os           # to be able to use os.scandir() to get the list of possible gameSaves to load
 import datetime     # to be able to timestamp new files that are created
-from kivy.app import App
+# from kivy.app import App
 
 
 print("CLUE SOLVER")
@@ -548,23 +548,101 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL
                 # EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL EXPERIMENTAL                
 
+
+
+            # EXPERIMENTAL MARCH 22 2022
+            # EXPERIMENTAL MARCH 22 2022
+            
             # Now, what if there is one Y and two "groups" of turnNumbers? For example, the Scarlett card & candlestick card were both part of a response on turn 1, and
             # wrench & billiard were both part of a response on turn 7. This means that every other ? in the column should be a '-'
             #   the first step is to identify the "groups"... which we will define as cells within the column that share the same set of turn numbers
-            group1 = []
-            group2 = []
-            possibleTurnNumbers = [x+1 for x in range(turnNumber)]
-            # possibleTurnNumbers = [1, 2, 3, 4, 5, 6, 7, 8]
-            for row in range(21):
-                for turn in possibleTurnNumbers:
-                    if turn in analyTable[row][__column] and turn not in group2:       # changed __column to 1 for debugging
-                        group1.append(turn)
-                        print("group1: " + str(group1) + "              column: " + str(__column) + " row: " + str(row))
-                    elif turn in analyTable[row][__column] and turn not in group1:
-                        group2.append(turn)
-                        print("     group2: " + str(group2))
-                    
+            # the ultimate goal here is to identify the groups of cells that share turnNumbers
+            #	for example, one group will be cells [1, 7, 8] that share turnNumbers [7, 15, 18]
+            #	another group will be cells [2, 4] that share turnNumbers [5, 6]
 
+
+            # groupXCells[0] = []			# where groupXCells[0] = [], and is a list of the cells in group 0
+            # groupXCells[1] = []			# this is a list of the cells in group 1
+            # groupXCells[2] = []			# this is a list of the cells in group 2
+            groupXCells = [ [] for i in range(10)]
+            # groupXTurnNumbers[0] = [], and is a list of the turnNumbers in group 0
+            groupXTurnNumbers = [ [] for i in range(10)]	# we're assuming that there will never be more than 10 groups... doesn't feel like a dangerous assumption in a six player game.....
+
+
+            def putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber):		
+                if cellsInGroup[groupNumber] == []:                      # if there are no cells in this group, then... 
+                    cellsInGroup[groupNumber].append(rowNumber)          # add this cell/rowNumber to groupXCells[groupNumber]
+                    for turnNumber in analyTable[rowNumber][columnNumber]:
+                        turnNumbersInGroup[groupNumber].append(turnNumber)    # ... and add these turnNumbers to groupXTurnNumbers
+                        # as of right now this will duplicate numbers, which may not matter...
+                
+                else:  # if groupXCells is NOT empty: or in other words if this group already has cells attached to it,
+                    # if any of the turnNumbers in this cell are in groupXTurnNumbers:
+                    anyTurnNumbersAreThere = False
+                    for turnNumber in analyTable[rowNumber][columnNumber]:
+                        if turnNumber in turnNumbersInGroup[groupNumber]:
+                            anyTurnNumbersAreThere = True
+                    if anyTurnNumbersAreThere:
+                        # add this cell to cellsInGroup
+                        cellsInGroup[groupNumber].append(rowNumber)
+                        # and add these turnNumbers to turnNumbersInGroup
+                        for turnNumber in analyTable[rowNumber][columnNumber]:
+                            turnNumbersInGroup[groupNumber].append(turnNumber)
+                    else: # if NONE of the turnNumbers in this cell are in groupXTurnNumbers:
+                        putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber + 1)		# recursion - this will end on its own eventually
+
+
+
+            # find the sizes of all the cells, e.g., numberOfElementsInRows[0] = 2 means that cell 0 in the column has 2 things in it... likely something like ['?', 4] or something
+            numberOfElementsInRows = []
+            for row in range(21):
+                numberOfElementsInRows.append(len(analyTable[row][__column]))
+
+
+            biggestCellSize = -1  		# then loop thru numberOfElementsInRows and identify the biggestCellSize
+            for element in numberOfElementsInRows:
+                if element > biggestCellSize:
+                    biggestCellSize = element
+
+            # if biggestCellSize = 1, then drop everything and stop????
+
+           
+            # initialize listOfCells
+            listOfCellsOfDifferentSizes = [ [] for i in range(biggestCellSize + 1)]			# for example listOfCellsOfDifferentSizes[2] = [3, 7] means that rows 3 and 7 have 2 elements each
+            # listOfCellsOfDifferentSizes.append(['Y'])
+            for x in range(biggestCellSize + 1):
+                # listOfCellsOfDifferentSizes.append([])  	# initialize the nested list
+                for row in range(21):
+                    if len(analyTable[row][__column]) == x + 1:
+                        # print("the length of the list at row " + str(row) + " and column " + str(__column) + " is " + str(len(analyTable[row][__column])))
+                        listOfCellsOfDifferentSizes[x + 1].append(row)
+            print("listOfCellsOfDifferentSizes: ")
+            print(listOfCellsOfDifferentSizes)
+
+
+            # listOfCellsOfDifferentSizes[1] = [], which is a list of the row numbers that have cells of size 1 
+            # listOfCellsOfDifferentSizes[2] = [], which is a list of the row numbers that have cells of size 2
+            # listOfCellsOfDifferentSizes[3] = [], which is a list of the row numbers that have cells of size 3
+            # ...
+            # listOfCellsOfDifferentSizes[x] = [], which is a list of the row numbers that have cells of size x
+
+
+            cellSizesToSearchFor = [biggestCellSize - x for x in range(biggestCellSize)]		# should look like [4, 3, 2, 1], or [3, 2, 1]
+
+            for cellSize in cellSizesToSearchFor:						# start with the biggest cell size & work your way down
+                for rowNumber in listOfCellsOfDifferentSizes[cellSize]: 			# for example, look at cells with 4 elements, then cells with 3 elements, etc.	
+                    putCellIntoGroupNumber(rowNumber, __column, groupXCells, groupXTurnNumbers, 0)	# at first, try to fit the cell into group 0, & recursion will try all other groups
+            
+            print("groupXCells[0]: " + str(groupXCells[0]))
+            print("groupXCells[1]: " + str(groupXCells[1]))
+            print("groupXCells[2]: " + str(groupXCells[2]))
+
+
+
+
+
+            # EXPERIMENTAL MARCH 22 2022
+            # EXPERIMENTAL MARCH 22 2022
 
 
 
