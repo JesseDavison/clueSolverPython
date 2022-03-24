@@ -17,7 +17,11 @@ import datetime     # to be able to timestamp new files that are created
 
 print("CLUE SOLVER")
 
+numberOfFunctionCalls = 0       # keeping track of how much processing is being done, for the sake of becoming more efficient
 
+initialAnalysisCompletedOfLoadedSavedGame = [False, False]
+initialAnalysisCompletedOfLoadedSavedGame[0] = False    # this will toggle to True after the first time processDecline() is run, after a saved game is loaded
+initialAnalysisCompletedOfLoadedSavedGame[1] = False    # this will toggle to True after the first time processRespond() is run, after a saved game is loaded
 
 class Card:
     def __init__(self, name, type, place) -> None:
@@ -444,14 +448,18 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 numberOfYs += 1
         return numberOfYs
 
-    def processYsHorizontal():      # if a row contains a 'Y', then mark all other cells in that row with '-' because it's impossible that another player also has that card
+    def processYsHorizontal():      # if a row contains a 'Y', then mark all other cells in that row with '-' because it's impossible that another player also has that cardu
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1
         for row in range(21):
             for column in range(6):
                 if "Y" in analyTable[row][column]:
                     for x in range(6):
                         if x != column:
                             analyTable[row][x] = ["-"]
-                            ################## CALL FUNCTION HERE
+                            ################## CALL FUNCTION(S) HERE 
+                            functionsToCallIfNegativeAdded()
+                            # allFunctions()
 
 
 #   if a player has three Ys in their column, then we know they do NOT have any other cards
@@ -459,6 +467,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 #   if a player has two Ys in their column and 1 to 3 other cells with a turnNumber, then we know that all '?'-only cells in the column should be changed to '-'
 #   if a player has one Y  in their column and two distinct "groups" of turnNumbers, then we know that all '?'-only cells in the column should be changed to '-'
     def processYsVertical():        
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1
         #   look down each column and count up how many Ys we see
         for column in range(6):
             numberOfYs = 0
@@ -484,13 +494,19 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if y not in locationOfYs and "-" not in analyTable[y][column]:
                         analyTable[y][column] = ["-"]
                         print("THREE Ys WERE FOUND IN COLUMN " + str(column) + ", SO THE CELL AT ROW " + str(y) + " WAS MARKED WITH '-'")
-                        ############## CALL FUNCTION HERE
+                        ############## CALL FUNCTION(S) HERE
+                        functionsToCallIfNegativeAdded()
+                        # allFunctions()
             if numberOfYs == 2 and numberOfQuestionMarks == 1:      #   if a player has two Ys in their column and one ?, then we know that the "?" should be changed to "Y"
                 analyTable[locationOfQuestionMarks[0]][column] = ["Y"]  
                 print("COLUMN " + str(column) + " WAS FOUND TO HAVE TWO Ys AND ONE ?, SO WE TURNED THE ? AT ROW " + str(locationOfQuestionMarks[0]) + " INTO A Y.")
-                #### CALL FUNCTION HERE
-            # if a player has two Ys in their column and 1 to 3 other cells with a turnNumber, then we know that all '?'-only cells in the column should be changed to '-'                
+                #### CALL FUNCTION(S) HERE
+                functionsToCallIfYAdded()
+                functionsToCallIfQuestionMarkRemoved()
+                functionsToCallIfTurnNumberRemoved()
+                # allFunctions()
 
+            # if a player has two Ys in their column and 1 to 3 other cells with a turnNumber, then we know that all '?'-only cells in the column should be changed to '-'                
             # check whether there are at least 2 cells that share a turnNumber
             for x in range(turnNumber):
                 for row in range(21):               # this chunk of code was backed up by one shift-tab
@@ -503,7 +519,11 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     if analyTable[row][column] == ["?"]:
                         analyTable[row][column] = ["-"]
                         print("(vertical function) COLUMN " + str(column) + " HAD TWO Ys AND AT LEAST ONE OTHER SET OF turnNUMBERS, SO AT ROW " + str(row) + " WE REPLACED THE LONE ? WITH '-'")
-                        ########### CALL FUNCTION HERE                        
+                        ########### CALL FUNCTION HERE    
+                        functionsToCallIfQuestionMarkRemoved()
+                        functionsToCallIfTurnNumberRemoved()
+                        functionsToCallIfNegativeAdded()                    
+                        # allFunctions()
 
             #   if a player has one Y  in their column and two distinct "groups" of turnNumbers, then we know that all '?'-only cells in the column should be changed to '-'
             if numberOfYs == 1:       # don't bother will all this crap if numberOfYs isn't 1
@@ -570,13 +590,13 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         if containsAtLeastOneTurnNumber:
                             putCellIntoGroupNumber(rowNumber, column, groupXCells, groupXTurnNumbers, 0)	# at first, try to fit the cell into group 0, & recursion will try all other groups
 
-                # all of this was so we can execute the following:
                 numberOfGroups = 0
                 for x in range(len(groupXCells)):
                     if len(groupXCells[x]) > 0:
                         numberOfGroups += 1
 
-                if numberOfYs == 1 and numberOfGroups > 1:      # yes, we already know that numberOfYs is 1, because we indented above... but this is for the coder's benefit
+                # all of this was so we can execute the following:
+                if numberOfYs == 1 and numberOfGroups > 1:      # yes, we already know that numberOfYs is 1, because we indented above... but we repeat here for the coder's benefit
                     # if there is one Y and at least 2 distinct groups of turnNumbers, then we know that all cells in that column that only have '?' can be changed to '-'
                     # so, go thru this __column and change the ? to -
                     for row in range(21):
@@ -584,10 +604,16 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             analyTable[row][column] = ['-']
                             print("OMG IT ACTUALLY WORKED?? in column " + str(column) + " we found one Y and two or more groups of turnNumbers, so we changed row " + str(row) + "'s '?' to '-'")
                             ############# CALL FUNCTION HERE
+                            functionsToCallIfQuestionMarkRemoved()
+                            functionsToCallIfNegativeAdded()
+                            functionsToCallIfTurnNumberRemoved()
+                            # allFunctions()
                 # look at .txt file titled 'clueSolver - one Y and groups.txt' for a breakdown (or muddy history?) of how we got this to work
 
 
     def checkForAllNegativesInRow(namesOfKillerWeaponRoom, announcements):
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1
         #   if a row has all "-", we know that that card is in the envelope, so announce that fact by printing it at top of analysis table printout
         for row in range(21):       # look at row 0 of the analysis table. If there is a "-" in every column then we're golden
             numberOfNegatives = 0
@@ -613,6 +639,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 
     def checkForLastRemainingQuestionMarksInCategory():             
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1        
         # this function checks whether the last few (or single) ? in a section can be changed into a Y or Ys, or possibly a '-'
  		# basically, if Y + ? = 5, and the killer is known, then the ? can safely be turned into Y
         #####################################################################################
@@ -637,6 +665,10 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":   # include "Y" bc we don't want to undo what we just did
                                     analyTable[rrow][column].remove(element)
                         ############ CALL FUNCTION HERE
+                        functionsToCallIfYAdded()
+                        functionsToCallIfQuestionMarkRemoved()
+                        # allFunctions()
+
         elif tallyKillerSection[0] == 5:    # if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(6):
                 for column in range(6):
@@ -644,6 +676,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         analyTable[row][column] = ["-"]
                         print("FIVE Ys WERE FOUND IN THE KILLER SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")
                         ########### CALL FUNCTION HERE
+                        functionsToCallIfNegativeAdded()
+                        # allFunctions()
         
         #####################################################################################
         tallyWeaponSection = [0, 0]       
@@ -666,6 +700,9 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
                                     analyTable[rrow][column].remove(element)
                         ######## CALL FUNCTION HERE
+                        functionsToCallIfYAdded()
+                        functionsToCallIfQuestionMarkRemoved()
+                        # allFunctions()
         elif tallyWeaponSection[0] == 5:    # if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(6, 12):
                 for column in range(6):
@@ -673,7 +710,8 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         analyTable[row][column] = ["-"]
                         print("FIVE Ys WERE FOUND IN THE WEAPON SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")
                         ######## CALL FUNCTION HERE
-
+                        functionsToCallIfNegativeAdded()
+                        # allFunctions()
         #####################################################################################
         tallyRoomSection = [0, 0]       
         for row in range(12, 21):
@@ -695,6 +733,9 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if element in analyTable[rrow][column] and element != "?" and element != "Y" and element != "-":
                                     analyTable[rrow][column].remove(element)
                         ########### CALL FUNCTION HERE
+                        functionsToCallIfYAdded()
+                        functionsToCallIfQuestionMarkRemoved()
+                        # allFunctions()
         elif tallyRoomSection[0] == 8:    # if there are n-1 Ys in the section, then the last row, no matter what, is the card in the envelope
             for row in range(12, 21):
                 for column in range(6):
@@ -702,9 +743,12 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                         analyTable[row][column] = ["-"]
                         print("EIGHT Ys WERE FOUND IN THE ROOM SECTION, MEANING THAT THE REMAINING ROW MUST REPRESENT THE CARD IN THE ENVELOPE")    
                         ######### CALL FUNCTION HERE
-
+                        functionsToCallIfNegativeAdded()
+                        # allFunctions()
 
     def checkForSingleTurnNumbersInColumn():    #   if a turnNumber appears only once in a column, we know that that player has that card
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1        
         for column in range(6):   #   loop thru each column, one at a time:
             # initialize a tally list for that column, to keep track of how many times we see each turn number appear
             #   the tally list answers the question, "How many times does turn 1 appear in the entire analysis table column? 0, 1, 2 or 3 times?"
@@ -739,12 +783,26 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                         if element in analyTable[row][column] and element != "?":
                                             analyTable[row][column].remove(element)
                             ######### CALL FUNCTION(S) HERE
+                            functionsToCallIfYAdded()
+                            functionsToCallIfTurnNumberRemoved()
+                            # allFunctions()
+
 
 
     def processDecline():       # mark a "-" for each player who declines, for those three cards
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1        
         #   identify all players who declined ... i.e., scarlettResponse == 'd', mustardResponse == 'd', etc, and mark all three card in that guess as "-" for that respondent
-        for turnMinusOne in range(turnNumber):
-        
+
+        numberOfIterations = []
+        if initialAnalysisCompletedOfLoadedSavedGame[0] == False:
+            numberOfIterations = [x for x in range(turnNumber)]
+            initialAnalysisCompletedOfLoadedSavedGame[0] = True
+        elif initialAnalysisCompletedOfLoadedSavedGame[0] == True:
+            numberOfIterations = [turnNumber-1]
+
+        for turnMinusOne in numberOfIterations:
+
             killerRowNum = turnData[turnMinusOne+1]['killerGuessed']
             weaponRowNum = turnData[turnMinusOne+1]['weaponGuessed']
             roomRowNum = turnData[turnMinusOne+1]['roomGuessed']
@@ -756,6 +814,9 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     analyTable[weaponRowNum][player.getColumnNumber()] = ["-"]
                     analyTable[roomRowNum][player.getColumnNumber()] = ["-"]  
                 ####### CALL FUNCTION(S) HERE
+                functionsToCallIfNegativeAdded()
+                # allFunctions()
+
 
          
     #       respond by showing a card (r)
@@ -763,8 +824,17 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
     #           if the card is known, then the ONLY THING we put into the analyTable is the "Y" for the owner of the card, and we remove everything else
     #           every time a new Y appears in the table, we need to run horizontal & vertical processing
     def processRespond():
-        for turnMinusOne in range(turnNumber):
+        global numberOfFunctionCalls
+        numberOfFunctionCalls += 1
 
+        numberOfIterations = []
+        if initialAnalysisCompletedOfLoadedSavedGame[1] == False:
+            numberOfIterations = [x for x in range(turnNumber)]
+            initialAnalysisCompletedOfLoadedSavedGame[1] = True
+        elif initialAnalysisCompletedOfLoadedSavedGame[1] == True:
+            numberOfIterations = [turnNumber-1]
+
+        for turnMinusOne in numberOfIterations:
             killerRowNum = turnData[turnMinusOne+1]['killerGuessed']
             weaponRowNum = turnData[turnMinusOne+1]['weaponGuessed']
             roomRowNum = turnData[turnMinusOne+1]['roomGuessed']
@@ -787,6 +857,11 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                                 if element in analyTable[row][player.getColumnNumber()] and element in [x+1 for x in range(turnNumber)]: # i.e. we don't want to remove "Y" or "?"
                                     analyTable[row][player.getColumnNumber()].remove(element)
                         ######### CALL FUNCTION(S) HERE
+                        functionsToCallIfYAdded()
+                        functionsToCallIfQuestionMarkRemoved()
+                        functionsToCallIfTurnNumberRemoved()
+                        functionsToCallIfNegativeRemoved()
+                        # allFunctions()
 
 
                     #   if there is a "Y" in any of the three cards that were just guessed, then don't bother recording the turnNumbers bc for all we know they showed that "Y" card
@@ -803,6 +878,37 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                             if (turnMinusOne + 1) not in analyTable[roomRowNum][player.getColumnNumber()]:
                                 analyTable[roomRowNum][player.getColumnNumber()].append(turnMinusOne + 1)
                         ##### CALL FUNCTION(S) HERE
+                        functionsToCallIfTurnNumberAdded()
+                        # allFunctions()
+
+    # Dealing with changes to -
+    def functionsToCallIfNegativeAdded():
+        checkForAllNegativesInRow(killerWeaponRoom, announces)
+    def functionsToCallIfNegativeRemoved():
+        pass   
+    
+    # Dealing with changes to Y
+    def functionsToCallIfYAdded():
+        processYsHorizontal()
+        processYsVertical()
+        checkForLastRemainingQuestionMarksInCategory()
+    def functionsToCallIfYRemoved():
+        pass
+  
+    # Dealing with changes to turnNumbers
+    def functionsToCallIfTurnNumberAdded():
+        processYsVertical()
+        checkForSingleTurnNumbersInColumn()
+    def functionsToCallIfTurnNumberRemoved():
+        checkForSingleTurnNumbersInColumn()
+  
+    # Dealing with changes to ?
+    def functionsToCallIfQuestionMarkAdded():
+        checkForLastRemainingQuestionMarksInCategory()
+    def functionsToCallIfQuestionMarkRemoved():
+        processYsVertical()
+        checkForLastRemainingQuestionMarksInCategory()
+
 
 
 
@@ -818,6 +924,7 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
 
 def printAnalysisTable(table, actualKillerWeaponRoom):
     print("ANALYSIS TABLE:")
+    print("# of function calls: " + str(numberOfFunctionCalls))
     print("                             Killer is: " + str(actualKillerWeaponRoom[0]))
     print("                             Weapon is: " + str(actualKillerWeaponRoom[1]))
     print("                             Room is: " + str(actualKillerWeaponRoom[2]))
@@ -945,6 +1052,8 @@ def startGame():
 
     gameFinished = False
     while (gameFinished == False): 
+        global numberOfFunctionCalls
+        numberOfFunctionCalls = 0
         executeTurn(turnNumber, turnLog, fileName)      
         analyzeData(turnNumber, turnLog, analysisTable, userCharacter, actualKillerWeaponRoom, announcementsHaveBeenMadeForKillerWeaponRoom)
         printAnalysisTable(analysisTable, actualKillerWeaponRoom)
