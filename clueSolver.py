@@ -537,39 +537,19 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                 groupXTurnNumbers = [ [] for i in range(10)]	# for example, groupXTurnNumbers[1] = []    is a list of the turnNumbers in group 1
                 # we're assuming that there will never be more than 10 groups... doesn't feel like a dangerous assumption in a six player game.....
 
-                def putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber):	 # this function should only be called on cells with turnNumber(s)
-                    if cellsInGroup[groupNumber] == []:                      # if there are no cells in this group, then... 
-                        cellsInGroup[groupNumber].append(rowNumber)          # add this cell/rowNumber to groupXCells[groupNumber]
-                        for turnNumber in analyTable[rowNumber][columnNumber]:  # ... and add these turnNumbers to groupXTurnNumbers
-                            if turnNumber not in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):   # don't want redundant duplicates, and we don't want non-integers
-                                turnNumbersInGroup[groupNumber].append(turnNumber)    
-                    else:  # if groupXCells is NOT empty, or in other words if this group already has cells attached to it,
-                        doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup = False
-                        for turnNumber in analyTable[rowNumber][columnNumber]:
-                            if turnNumber in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):
-                                doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup = True
-                        if doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup:
-                            cellsInGroup[groupNumber].append(rowNumber)                 # add this cell to cellsInGroup
-                            for turnNumber in analyTable[rowNumber][columnNumber]:      # and add these turnNumbers to turnNumbersInGroup
-                                if turnNumber not in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):       # ...without adding duplicates
-                                    turnNumbersInGroup[groupNumber].append(turnNumber)
-                        else: # if NONE of the turnNumbers in this cell are in groupXTurnNumbers, then try to add them to a different group:
-                            putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber + 1)		# recursion - this will end on its own eventually
-
-
                 # save all non-Y, non-'-', non-?-only cells to a list
                 listOfCellsInColumnWithTurnNumbers = []
                 for row in range(21):
                     if 'Y' not in analyTable[row][column] and '-' not in analyTable[row][column] and analyTable[row][column] != ['?']:
-                        listOfCellsInColumnWithTurnNumbers.append(row)         # these cells will have '?' in them but that shouldn't matter
+                        listOfCellsInColumnWithTurnNumbers.append(row)         
 
-                if column == 1:
-                    print("listOfCells: " + str(listOfCellsInColumnWithTurnNumbers))
-                    for element in listOfCellsInColumnWithTurnNumbers:
-                        print(analyTable[element][column])
-                        print("done")
+                # if column == 1:
+                #     print("listOfCells: " + str(listOfCellsInColumnWithTurnNumbers))
+                #     for element in listOfCellsInColumnWithTurnNumbers:
+                #         print(analyTable[element][column])
+                #         print("done")
 
-                def useThe_putCellsIntoGroupNumber_functionInAnOrderThatDoesntBreakThings(listOfCells):
+                def putCellsIntoGroupsCorrectlyForGodsSake(listOfCells, groupNum):
                     # pick one of the biggest cells to start with
                     biggestCellSize = -1
                     for cell in listOfCells:            # 'cell' is a row number
@@ -579,202 +559,52 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
                     for cell in listOfCells:
                         if len(analyTable[cell][column]) == biggestCellSize:
                             indexOfOneOfBiggestCells = cell
-                            # break
+                            # break                   # as of right now this line makes or break it... and that should not be the case#################################################
 
-                    # identify the turnNumbers contained in that "biggest" cell
-                    turnNumbersInBiggestCell = []
+                    # identify the turnNumbers contained in that "biggest" cell and consider them the founding members of our first "group"
+                    turnNumbersInBiggestGroup = []
                     for element in analyTable[indexOfOneOfBiggestCells][column]:
-                        if element != '?':
-                            turnNumbersInBiggestCell.append(element)
-                    if column == 1:
-                        print("turnNumbersInBiggestCell: " +str(turnNumbersInBiggestCell))
+                        if element != '?' and element != '-' and element not in turnNumbersInBiggestGroup:
+                            turnNumbersInBiggestGroup.append(element)
+                            # now that we've added a turnNumber into the group, let's hunt down every single row that might also have that turnNumber
+                            for y in range(len(listOfCells)):     # not sure how many times, at minimum, the following loop needs to repeat..... but i know that stuff gets missed if only once
+                                for cell in listOfCells:    # if anything in this cell is already in turnNumbersInBiggestGroup, then add EVERYTHING in that cell to turnNumbersInBiggestGroup
+                                    isAnythingAlreadyInGroup = False
+                                    for thingInCell in analyTable[cell][column]:
+                                        if thingInCell in turnNumbersInBiggestGroup:
+                                            isAnythingAlreadyInGroup = True
+                                    if isAnythingAlreadyInGroup:        # add the entire contents of the cell to the group
+                                        for thingInCell in analyTable[cell][column]:
+                                            if thingInCell not in turnNumbersInBiggestGroup and thingInCell != '?':
+                                                turnNumbersInBiggestGroup.append(thingInCell)       
 
-                    # identify any cells that DO NOT SHARE any turnNumbers with our "biggest" cell
-                    cellsThatDoNotShareTurnNumbers = []     # again, remember that "cell" = row number in the analyTable
+                    # identify any cells that DO NOT SHARE any turnNumbers with our "biggest" cell, so we can try to put these in ANOTHER group
+                    cellsThatDidntFitInThisGroup = []     # again, remember that "cell" = row number in the analyTable
                     for cell in listOfCells:
                         cellDoesShareTurnNumbersWithBiggestCell = False
-                        for turnNum in turnNumbersInBiggestCell:
-                            if turnNum in analyTable[cell][column]:
+                        for turnNum in turnNumbersInBiggestGroup:
+                            if turnNum in analyTable[cell][column] and turnNum != '?':
                                 cellDoesShareTurnNumbersWithBiggestCell = True
                         if cellDoesShareTurnNumbersWithBiggestCell == False:
-                            cellsThatDoNotShareTurnNumbers.append(cell)
-                    cellsThatDoDoDoDoDoShareTurnNumbers = []                # we'll make a parallet list, so we can process these cells first
+                            cellsThatDidntFitInThisGroup.append(cell)
+                    cellsThatDoFITINTHEGROUP = []                # we'll make a parallel list, so we can process these cells first
                     for cell in listOfCells:
-                        if cell not in cellsThatDoNotShareTurnNumbers:
-                            cellsThatDoDoDoDoDoShareTurnNumbers.append(cell)
+                        if cell not in cellsThatDidntFitInThisGroup:
+                            cellsThatDoFITINTHEGROUP.append(cell)            #boom, this is group1... don't need to use that other function
 
+                    groupXCells[groupNum] = cellsThatDoFITINTHEGROUP
+                    groupXTurnNumbers[groupNum] = turnNumbersInBiggestGroup
                     
-                    if column == 1:
-                        print("cellsThatDoNotShareTurnNumbers: " + str(cellsThatDoNotShareTurnNumbers))
-                        print("cellsThatDoDoDoDoDoShareTurnNumbers: " + str(cellsThatDoDoDoDoDoShareTurnNumbers))
-
-                    # now process every cell that doesn't fit in 'cellsThatDoNotShareTurnNumbers'
-                    for cell in cellsThatDoDoDoDoDoShareTurnNumbers:
-                        putCellIntoGroupNumber(cell, column, groupXCells, groupXTurnNumbers, 0)
-
                     # now that that is done, we start again, this time defining our "biggest" cell again from the cellsThatDoNotShareTurnNumbers
-                    if len(cellsThatDoNotShareTurnNumbers) > 0:
-                        useThe_putCellsIntoGroupNumber_functionInAnOrderThatDoesntBreakThings(cellsThatDoNotShareTurnNumbers)
+                    if len(cellsThatDidntFitInThisGroup) > 0:
+                        putCellsIntoGroupsCorrectlyForGodsSake(cellsThatDidntFitInThisGroup, groupNum + 1)
 
 
-                useThe_putCellsIntoGroupNumber_functionInAnOrderThatDoesntBreakThings(listOfCellsInColumnWithTurnNumbers)    
+                putCellsIntoGroupsCorrectlyForGodsSake(listOfCellsInColumnWithTurnNumbers, 0) 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                # # pick one of the biggest cells to start with
-                # biggestCellSize = -1
-                # for cell in listOfCellsInColumnWithTurnNumbers:            # 'cell' is a row number
-                #     if len(analyTable[cell][column]) > biggestCellSize:
-                #         biggestCellSize = len(analyTable[cell][column])
-                # indexOfOneOfBiggestCells = -1
-                # for cell in listOfCellsInColumnWithTurnNumbers:
-                #     if len(analyTable[cell][column]) == biggestCellSize:
-                #         indexOfOneOfBiggestCells = cell
-                #         # break
-
-                # # identify the turnNumbers contained in that "biggest" cell
-                # turnNumbersInBiggestCell = []
-                # for element in analyTable[indexOfOneOfBiggestCells][column]:
-                #     if element != '?':
-                #         turnNumbersInBiggestCell.append(element)
-                # if column == 1:
-                #     print("turnNumbersInBiggestCell: " +str(turnNumbersInBiggestCell))
-
-                # # identify any cells that DO NOT SHARE any turnNumbers with our "biggest" cell
-                # cellsThatDoNotShareTurnNumbers = []     # again, remember that "cell" = row number in the analyTable
-                # for cell in listOfCellsInColumnWithTurnNumbers:
-                #     cellDoesShareTurnNumbersWithBiggestCell = False
-                #     for turnNum in turnNumbersInBiggestCell:
-                #         if turnNum in analyTable[cell][column]:
-                #             cellDoesShareTurnNumbersWithBiggestCell = True
-                #     if cellDoesShareTurnNumbersWithBiggestCell == False:
-                #         cellsThatDoNotShareTurnNumbers.append(cell)
-                # cellsThatDoDoDoDoDoShareTurnNumbers = []                # we'll make a parallet list, so we can process these cells first
-                # for cell in listOfCellsInColumnWithTurnNumbers:
-                #     if cell not in cellsThatDoNotShareTurnNumbers:
-                #         cellsThatDoDoDoDoDoShareTurnNumbers.append(cell)
-
-                
-                # if column == 1:
-                #     print("cellsThatDoNotShareTurnNumbers: " + str(cellsThatDoNotShareTurnNumbers))
-                #     print("cellsThatDoDoDoDoDoShareTurnNumbers: " + str(cellsThatDoDoDoDoDoShareTurnNumbers))
-
-                # # now process every cell that doesn't fit in 'cellsThatDoNotShareTurnNumbers'
-                # for cell in cellsThatDoDoDoDoDoShareTurnNumbers:
-                #     putCellIntoGroupNumber(cell, column, groupXCells, groupXTurnNumbers, 0)
-
-                # # now that that is done, we start again, this time defining our "biggest" cell again from the cellsThatDoNotShareTurnNumbers
-
-
-
-
-
-
-
-
-
-
-
-
-
-#######################################################################################################################################################
-#######################################################################################################################################################
-###########################     END      ############################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-                # groupXCells = [ [] for i in range(10)]          # for example, groupXCells[1] = []          is a list of the cells in group 1
-                # groupXTurnNumbers = [ [] for i in range(10)]	# for example, groupXTurnNumbers[1] = []    is a list of the turnNumbers in group 1
-                # # we're assuming that there will never be more than 10 groups... doesn't feel like a dangerous assumption in a six player game.....
-
-                # def putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber):	 # this function should only be called on cells with turnNumber(s)
-                #     if cellsInGroup[groupNumber] == []:                      # if there are no cells in this group, then... 
-                #         cellsInGroup[groupNumber].append(rowNumber)          # add this cell/rowNumber to groupXCells[groupNumber]
-                #         for turnNumber in analyTable[rowNumber][columnNumber]:  # ... and add these turnNumbers to groupXTurnNumbers
-                #             if turnNumber not in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):   # don't want redundant duplicates, and we don't want non-integers
-                #                 turnNumbersInGroup[groupNumber].append(turnNumber)    
-                #     else:  # if groupXCells is NOT empty, or in other words if this group already has cells attached to it,
-                #         doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup = False
-                #         for turnNumber in analyTable[rowNumber][columnNumber]:
-                #             if turnNumber in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):
-                #                 doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup = True
-                #         if doesTheNewCellHaveTurnNumbersThatAreAlreadyInTheGroup:
-                #             cellsInGroup[groupNumber].append(rowNumber)                 # add this cell to cellsInGroup
-                #             for turnNumber in analyTable[rowNumber][columnNumber]:      # and add these turnNumbers to turnNumbersInGroup
-                #                 if turnNumber not in turnNumbersInGroup[groupNumber] and isinstance(turnNumber, int):       # ...without adding duplicates
-                #                     turnNumbersInGroup[groupNumber].append(turnNumber)
-                #         else: # if NONE of the turnNumbers in this cell are in groupXTurnNumbers, then try to add them to a different group:
-                #             putCellIntoGroupNumber(rowNumber, columnNumber, cellsInGroup, turnNumbersInGroup, groupNumber + 1)		# recursion - this will end on its own eventually
-
-                # find the sizes of all the cells, e.g., 
-                numberOfElementsInCells = []  # numberOfElementsInCells[0] = 2, means that cell 0 in the column has 2 things in it... likely something like ['?', 4] or something
-                for row in range(21):
-                    numberOfElementsInCells.append(len(analyTable[row][column]))
-                # if __column == 1:
-                #     print("numberOfElementsInRows: " + str(numberOfElementsInRows))
-
-                biggestCellSize = -1  		# then loop thru numberOfElementsInCells and identify the biggestCellSize
-                for entry in numberOfElementsInCells:
-                    if entry > biggestCellSize:
-                        biggestCellSize = entry
-                # if __column == 1:
-                #     print("biggestCellSize: " + str(biggestCellSize))
-                # if biggestCellSize = 1, then drop everything and stop????
-
-                listOfCellsOfDifferentSizes = [ [] for i in range(biggestCellSize + 1)]			# for example listOfCellsOfDifferentSizes[2] = [3, 7] means that rows 3 and 7 have 2 elements each
-                for x in range(biggestCellSize + 1):
-                    for row in range(21):
-                        if len(analyTable[row][column]) == x + 1:
-                            # print("the length of the list at row " + str(row) + " and column " + str(__column) + " is " + str(len(analyTable[row][__column])))
-                            listOfCellsOfDifferentSizes[x + 1].append(row)
-                # listOfCellsOfDifferentSizes[1] = [], which is a list of the row numbers that have cells of size 1 
-                # listOfCellsOfDifferentSizes[2] = [], which is a list of the row numbers that have cells of size 2
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-                # if column == 1:
-                #     print("column: " + str(column) + "                                listOfCellsOfDifferentSizes: " + str(listOfCellsOfDifferentSizes))
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-                cellSizesToSearchFor = [biggestCellSize - x for x in range(biggestCellSize)]		# should look like [4, 3, 2, 1], or [3, 2, 1] or [2, 1]
-                # this is so we can start creating "groups" beginning with the cells that have the most turnNumbers in them
-                # if we didn't do it this way, then we could build up two separate groups, only to find out near the end of the process that they're in fact in the SAME group
-                # because we found a cell where at least one turnNumber from each group are in the same cell together
-
-                for cellSize in cellSizesToSearchFor:						# start with the biggest cell size & work your way down
-                    for rowNumber in listOfCellsOfDifferentSizes[cellSize]: 			# for example, look at cells with 4 elements, then cells with 3 elements, etc.	
-                        # only run the function IF THE CELL CONTAINS AT LEAST 1 TURN NUMBER!!!!
-                        # very important!!!! because a group really shouldn't exist unless there's a turnNumber in the cell (and we're too lazy to deal with '?' in another way)
-                        containsAtLeastOneTurnNumber = False
-                        for x in range(turnNumber + 1):
-                            if x in analyTable[rowNumber][column]:
-                                containsAtLeastOneTurnNumber = True
-                        if containsAtLeastOneTurnNumber:
-                            putCellIntoGroupNumber(rowNumber, column, groupXCells, groupXTurnNumbers, 0)	# at first, try to fit the cell into group 0, & recursion will try all other groups
+                # if len(groupXCells[0]) > 0:
+                #     print("groupXCells:       " + str(groupXCells))
+                #     print("groupXTurnNumbers: " + str(groupXTurnNumbers))
 
                 numberOfGroups = 0
                 for x in range(len(groupXCells)):
@@ -1094,7 +924,6 @@ def analyzeData(turnNumber, turnData, analyTable, user, killerWeaponRoom, announ
     def functionsToCallIfQuestionMarkRemoved():
         processYsVertical()
         checkForLastRemainingQuestionMarksInCategory()
-
 
 
 
